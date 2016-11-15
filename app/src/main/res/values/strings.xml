@@ -1,0 +1,34 @@
+<resources>
+    <string name="app_name">Smart Photo</string>
+    <string name="upload_button_name">Upload Pictures</string>
+    <string name="camera_button_name">Open Camera</string>
+    <string name="desc">This is where the photo will appear</string>
+    <string name="confirm_button">Confirm Location</string>
+    <string name="city_name">City Name</string>
+    <string name="city_hint">Be as specific as possible</string>
+    <string name="username_prompt">Enter Username</string>
+    <string name="password_prompt">Enter Password</string>
+    <string name="login_button">Login</string>
+    <string name="register_button">Register</string>
+    <string name="cancel_button">Cancel</string>
+    <string name="title_activity_location">LocationActivity</string>
+    <string name="title_activity_trip">TripActivity</string>
+    <string name="start_trip_button">Start New Trip</string>
+    <string name="end_trip_button">End Trip</string>
+    <string name="city_text">Location:</string>
+    <string name="user_text">Username:</string>
+    <string name="user_hint">Must be at least six characters</string>
+    <string name="password_text">Password:</string>
+    <string name="password_hint">Must be at least eight characters</string>
+    <string name="password_confirm">Confirm Password:</string>
+    <string name="confirm_hint">Must match above password</string>
+    <string name="guest_button">Guest</string>
+    <string name="trip_button">View Previous Trips</string>
+    <string name="continue_button">Continue Old Trip</string>
+    <string name="logout_button">Logout</string>
+    <string name="exit_button">Exit</string>
+    <string name="return_button">Return</string>
+    <string name="delete_button">Delete Trip</string>
+    <string name="delete_photo">Delete Photo</string>
+    <string name="review_trip">Review Current Trip</string>
+</resources>
