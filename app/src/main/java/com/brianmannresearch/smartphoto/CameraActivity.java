@@ -88,7 +88,7 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
         reviewButton = (Button) findViewById(R.id.reviewTrip);
 
 
-        upLoadServerUrl = "http://10.13.147.183:80/my-site/upload.php";
+        upLoadServerUrl = "http://ndssl.000webhostapp.com/photos/upload.php";
 
         bCamera.setOnClickListener(this);
         endButton.setOnClickListener(this);
@@ -154,6 +154,12 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
             dialog.dismiss();
 
             Log.e("uploadFile", "Source File does not exist: " + filename);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(CameraActivity.this, "File does not exist", Toast.LENGTH_LONG).show();
+                }
+            });
             return 0;
         } else {
             try {
