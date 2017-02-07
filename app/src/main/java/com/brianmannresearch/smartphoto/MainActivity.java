@@ -6,12 +6,15 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.location.Location;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -23,25 +26,35 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 
-    private static final int CAMERA_INTENT = 1, COURSE_LOCATION_REQUEST = 2, FINE_LOCATION_REQUEST = 3,
-            WRITE_STORAGE_REQUEST = 4, READ_STORAGE_REQUEST = 5, CAMERA_REQUEST = 6;
+public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, View.OnClickListener {
 
-    Button startButton, continueButton, tripButton, exitButton, deleteButton;
-    TextView tripText;
-    File imagesFolder, directory;
-    GPSTracker gps;
-    File[] folders, files;
-    String[] foldername;
+    private static final int CAMERA_INTENT = 1, LOCATION_REQUEST = 2, WRITE_STORAGE_REQUEST = 4, READ_STORAGE_REQUEST = 5, CAMERA_REQUEST = 6;
+    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 1000;
 
-    int tripid, permission = 0;
-    StringBuilder trips;
+    private Button startButton, exitButton, deleteButton;
+    private LinearLayout linearLayout;
+    private TextView[] tv;
+    private String username, Filename;
+    private String[] filename;
+    private GoogleApiClient mGoogleApiClient;
+    private LocationRequest mLocationRequest;
+    private Location mCurrentLocation;
+    private File tripfolder, directory;
+    private File[] folders;
+
+    private int tripnumber = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,136 +65,131 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             showSettingsAlert();
         }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, COURSE_LOCATION_REQUEST);
-        }else{
-            permission++;
-        }
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, FINE_LOCATION_REQUEST);
-        }else{
-            permission++;
+        // check if application has permission to use location services
+        // if not, request permission
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST);
         }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITE_STORAGE_REQUEST);
-        }else{
-            permission++;
         }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, READ_STORAGE_REQUEST);
             }
-        }else{
-            permission++;
         }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
-        }else{
-            permission++;
         }
 
-        gps = new GPSTracker(MainActivity.this);
-
-        tripText = (TextView) findViewById(R.id.tripText);
-
-        if(permission == 5){
-            resumestartup();
-        }
+        // get the username
+        showUsernameAlert();
 
         startButton = (Button) findViewById(R.id.startButton);
-        continueButton = (Button) findViewById(R.id.continueButton);
-        tripButton = (Button) findViewById(R.id.tripButton);
         exitButton = (Button) findViewById(R.id.exitButton);
         deleteButton = (Button) findViewById(R.id.deleteButton);
 
         startButton.setOnClickListener(this);
-        continueButton.setOnClickListener(this);
-        tripButton.setOnClickListener(this);
         exitButton.setOnClickListener(this);
         deleteButton.setOnClickListener(this);
-    }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        switch (requestCode){
-            case CAMERA_REQUEST: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    permission++;
-                    if (permission == 5) {
-                        resumestartup();
-                    }
-                }
-                break;
-            }
-            case COURSE_LOCATION_REQUEST: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    permission++;
-                    if (permission == 5) {
-                        resumestartup();
-                    }
-                }
-                break;
-            }
-            case FINE_LOCATION_REQUEST: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    permission++;
-                    if (permission == 5) {
-                        resumestartup();
-                    }
-                }
-                break;
-            }
-            case READ_STORAGE_REQUEST: {
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    permission++;
-                    if (permission == 5) {
-                        resumestartup();
-                    }
-                }
-                break;
-            }
-            case WRITE_STORAGE_REQUEST:{
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    permission++;
-                    if (permission == 5) {
-                        resumestartup();
-                    }
-                }
-                break;
-            }
+        if (mGoogleApiClient == null){
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
         }
-    }
+        createLocationRequest();
 
-    private void resumestartup() {
+        linearLayout = (LinearLayout) findViewById(R.id.history_linear);
+
         directory = new File(String.valueOf(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
         folders = directory.listFiles();
-        trips = new StringBuilder();
-        trips.append("Existing Trips:");
-        for (int i = 0; i < folders.length; i++){
-            foldername = folders[i].toString().split("/");
-            if (foldername[foldername.length-1].matches("Trip_\\d*")) {
-                trips.append("\n").append("- ").append(foldername[foldername.length - 1]);
+        int size = folders.length;
+        tv = new TextView[size];
+        TextView temp;
+        String textview = "Existing Trips:";
+        temp = new TextView(this);
+        temp.setText(textview);
+        int i = 0;
+        for (File file : folders) {
+            if (file.toString().matches("\\S*Trip_\\d*")) {
+                temp = new TextView(this);
+                temp.setId(i);
+                String[] split = file.toString().split("/");
+                int index = split.length;
+                textview = split[index-1];
+                temp.setText(textview);
+                temp.setTextColor(Color.BLUE);
+                temp.setClickable(true);
+                temp.setOnClickListener(this);
+                linearLayout.addView(temp);
+                tv[i] = temp;
+                i++;
             }
         }
-        tripText.setText(trips);
+    }
+
+    private void createLocationRequest(){
+        mLocationRequest = new LocationRequest();
+        // desired interval for updates
+        mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
+        mLocationRequest.setFastestInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    }
+
+    private void showUsernameAlert(){
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+        LayoutInflater inflater = this.getLayoutInflater();
+
+        alertDialog.setMessage("Please enter a username:")
+                .setCancelable(false)
+                .setView(inflater.inflate(R.layout.text_dialog, null))
+                .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        Dialog f = (Dialog) dialogInterface;
+                        EditText text = (EditText) f.findViewById(R.id.text);
+                        String input = text.getText().toString();
+                        if (input.matches("")){
+                            showUsernameAlert();
+                            Toast.makeText(MainActivity.this, "Please enter a username", Toast.LENGTH_LONG).show();
+                        }else {
+                            username = input;
+                            // check for previous trips in order to know which trip number should be instantiated
+                            folders = directory.listFiles();
+                            for (File file : folders) {
+                                filename = file.toString().split("/");
+                                if (filename[filename.length - 1].matches(username + "\\S*Trip_\\d*")) {
+                                    tripnumber++;
+                                }
+                            }
+                        }
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // do nothing
+                        finish();
+                    }
+                });
+        final AlertDialog alert = alertDialog.create();
+        alert.show();
     }
 
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.startButton:
-                showNewTripAlert();
-                break;
-            case R.id.continueButton:
-                showContinueTripAlert();
-                break;
-            case R.id.tripButton:
-                showTripAlert();
+                String foldername = username+ "_Trip_" + tripnumber;
+                Intent cameraIntent = new Intent(MainActivity.this, CameraActivity.class);
+                cameraIntent.putExtra("folder", foldername);
+                startActivityForResult(cameraIntent, CAMERA_INTENT);
                 break;
             case R.id.exitButton:
                 showFinishAlert();
@@ -189,7 +197,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.deleteButton:
                 showDeleteAlert();
                 break;
+            default:
+                TextView textView = (TextView) findViewById(view.getId());
+                Filename = textView.getText().toString();
+                Toast.makeText(this, Filename, Toast.LENGTH_LONG).show();
+                Intent galleryIntent = new Intent(MainActivity.this, GalleryActivity.class);
+                galleryIntent.putExtra("foldername", Filename);
+                startActivity(galleryIntent);
+                break;
         }
+    }
+
+    private void startLocationUpdates(){
+        LocationServices.FusedLocationApi.requestLocationUpdates(
+                mGoogleApiClient, mLocationRequest, this);
     }
 
     @Override
@@ -218,163 +239,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         alert.show();
     }
 
-    private void showTripAlert(){
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-        LayoutInflater inflater = this.getLayoutInflater();
-
-        alertDialog.setMessage("What trip number do you want to view?")
-                .setCancelable(false)
-                .setView(inflater.inflate(R.layout.trip_dialog, null))
-                .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        Dialog f = (Dialog) dialogInterface;
-                        EditText text = (EditText) f.findViewById(R.id.tripID);
-                        String input = text.getText().toString();
-                        if (input.matches("")){
-                            Toast.makeText(MainActivity.this, "Please enter a value", Toast.LENGTH_LONG).show();
-                        }else {
-                            tripid = Integer.parseInt(input);
-                            Intent galleryIntent = new Intent(MainActivity.this, GalleryActivity.class);
-                            galleryIntent.putExtra("tripid", tripid);
-                            startActivity(galleryIntent);
-                        }
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        // do nothing
-                    }
-                });
-        final AlertDialog alert = alertDialog.create();
-        alert.show();
-    }
-
-    private void showNewTripAlert(){
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-        LayoutInflater inflater = this.getLayoutInflater();
-
-        alertDialog.setMessage("What trip number is this?")
-                .setCancelable(false)
-                .setView(inflater.inflate(R.layout.trip_dialog, null))
-                .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        Dialog f = (Dialog) dialogInterface;
-                        EditText text = (EditText) f.findViewById(R.id.tripID);
-                        String input = text.getText().toString();
-                        if (input.matches("")){
-                            Toast.makeText(MainActivity.this, "Please enter a value", Toast.LENGTH_LONG).show();
-                        }else {
-                            tripid = Integer.parseInt(input);
-                            imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Trip_" + tripid);
-                            if (imagesFolder.exists() && imagesFolder.isDirectory() && (imagesFolder.listFiles().length != 0)) {
-                                showExistsNewAlert();
-                            } else {
-                                Intent cameraIntent = new Intent(MainActivity.this, CameraActivity.class);
-                                cameraIntent.putExtra("tripid", tripid);
-                                cameraIntent.putExtra("mode", "new");
-                                startActivityForResult(cameraIntent, CAMERA_INTENT);
-                            }
-                        }
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        // do nothing
-                    }
-                });
-        final AlertDialog alert = alertDialog.create();
-        alert.show();
-    }
-
-    private void showContinueTripAlert(){
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-        LayoutInflater inflater = this.getLayoutInflater();
-
-        alertDialog.setMessage("What trip do you want to continue?")
-                .setCancelable(false)
-                .setView(inflater.inflate(R.layout.trip_dialog, null))
-                .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        Dialog f = (Dialog) dialogInterface;
-                        EditText text = (EditText) f.findViewById(R.id.tripID);
-                        String input = text.getText().toString();
-                        if (input.matches("")){
-                            Toast.makeText(MainActivity.this, "Please enter a value", Toast.LENGTH_LONG).show();
-                        }else {
-                            tripid = Integer.parseInt(input);
-                            imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Trip_" + tripid);
-                            if (!imagesFolder.exists() && !imagesFolder.isDirectory()) {
-                                showExistsContinueAlert();
-                            } else {
-                                Intent cameraIntent = new Intent(MainActivity.this, CameraActivity.class);
-                                cameraIntent.putExtra("tripid", tripid);
-                                cameraIntent.putExtra("mode", "continue");
-                                startActivityForResult(cameraIntent, CAMERA_INTENT);
-                            }
-                        }
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        // do nothing
-                    }
-                });
-        final AlertDialog alert = alertDialog.create();
-        alert.show();
-    }
-
-    private void showExistsNewAlert(){
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-        alertDialog.setMessage("This trip already exists. Do you want to continue this trip, instead?")
-                .setCancelable(false)
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        Intent cameraIntent = new Intent(MainActivity.this, CameraActivity.class);
-                        cameraIntent.putExtra("tripid", tripid);
-                        cameraIntent.putExtra("mode", "continue");
-                        startActivityForResult(cameraIntent, CAMERA_INTENT);
-                    }
-                })
-                .setNegativeButton("No", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-
-                    }
-                });
-        final AlertDialog alert = alertDialog.create();
-        alert.show();
-    }
-
-    private void showExistsContinueAlert(){
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-        alertDialog.setMessage("This trip does not exist. Do you want to create it, instead?")
-                .setCancelable(false)
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        Intent cameraIntent = new Intent(MainActivity.this, CameraActivity.class);
-                        cameraIntent.putExtra("tripid", tripid);
-                        cameraIntent.putExtra("mode", "new");
-                        startActivityForResult(cameraIntent, CAMERA_INTENT);
-                    }
-                })
-                .setNegativeButton("No", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-
-                    }
-                });
-        final AlertDialog alert = alertDialog.create();
-        alert.show();
-    }
-
     private void showConfirmDeleteAlert(){
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         alertDialog.setMessage("Are you sure you want to delete this trip?")
@@ -382,21 +246,37 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        if (!imagesFolder.exists() && !imagesFolder.isDirectory()) {
+                        if (!tripfolder.exists() && !tripfolder.isDirectory()) {
                             showExistsAlert();
                         } else {
-                            deleteDirectory(imagesFolder);
-                            directory = new File(String.valueOf(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
+                            deleteDirectory(tripfolder);
+                            for (TextView textView : tv){
+                                linearLayout.removeView(textView);
+                            }
                             folders = directory.listFiles();
-                            trips = new StringBuilder();
-                            trips.append("Existing Trips:");
-                            for (int j = 0; j < folders.length; j++){
-                                foldername = folders[j].toString().split("/");
-                                if (foldername[foldername.length-1].matches("Trip_\\d*")) {
-                                    trips.append("\n").append("- ").append(foldername[foldername.length - 1]);
+                            int size = folders.length;
+                            tv = new TextView[size];
+                            TextView temp;
+                            String textview = "Existing Trips:";
+                            temp = new TextView(MainActivity.this);
+                            temp.setText(textview);
+                            int j = 0;
+                            for (File file : folders) {
+                                if (file.toString().matches("\\S*Trip_\\d*")) {
+                                    temp = new TextView(MainActivity.this);
+                                    temp.setId(j);
+                                    String[] split = file.toString().split("/");
+                                    int index = split.length;
+                                    textview = split[index-1];
+                                    temp.setText(textview);
+                                    temp.setTextColor(Color.BLUE);
+                                    temp.setClickable(true);
+                                    temp.setOnClickListener(MainActivity.this);
+                                    linearLayout.addView(temp);
+                                    tv[j] = temp;
+                                    j++;
                                 }
                             }
-                            tripText.setText(trips);
                         }
                     }
                 })
@@ -414,20 +294,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         final LayoutInflater inflater = this.getLayoutInflater();
 
-        alertDialog.setMessage("What trip number do you want to delete?")
+        alertDialog.setMessage("What trip do you want to delete?")
                 .setCancelable(false)
-                .setView(inflater.inflate(R.layout.trip_dialog, null))
+                .setView(inflater.inflate(R.layout.text_dialog, null))
                 .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         Dialog f = (Dialog) dialogInterface;
-                        EditText text = (EditText) f.findViewById(R.id.tripID);
+                        EditText text = (EditText) f.findViewById(R.id.text);
                         String input = text.getText().toString();
+                        tripfolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), input);
                         if (input.matches("")){
-                            Toast.makeText(MainActivity.this, "Please enter a value", Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, "Please enter a trip", Toast.LENGTH_LONG).show();
                         }else {
-                            tripid = Integer.parseInt(input);
-                            imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Trip_" + tripid);
                             showConfirmDeleteAlert();
                         }
                     }
@@ -443,7 +322,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void deleteDirectory(final File Directory){
-        files = Directory.listFiles();
+        File[] files = Directory.listFiles();
         for (int j = 0; j < files.length; j++) {
             if (files[j].delete()){
                 Log.e("-->", "file Deleted :" + files[j].getAbsolutePath());
@@ -489,17 +368,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == CAMERA_INTENT && resultCode == RESULT_OK) {
-            directory = new File(String.valueOf(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
+            for (TextView textView : tv){
+                linearLayout.removeView(textView);
+            }
             folders = directory.listFiles();
-            trips = new StringBuilder();
-            trips.append("Existing Trips:");
-            for (int i = 0; i < folders.length; i++){
-                foldername = folders[i].toString().split("/");
-                if (foldername[foldername.length-1].matches("Trip_\\d*")) {
-                    trips.append("\n").append("- ").append(foldername[foldername.length - 1]);
+            int size = folders.length;
+            tv = new TextView[size];
+            TextView temp;
+            String textview = "Existing Trips:";
+            temp = new TextView(this);
+            temp.setText(textview);
+            int i = 0;
+            for (File file : folders) {
+                if (file.toString().matches("\\S*Trip_\\d*")) {
+                    temp = new TextView(this);
+                    temp.setId(i);
+                    String[] split = file.toString().split("/");
+                    int index = split.length;
+                    textview = split[index-1];
+                    temp.setText(textview);
+                    temp.setTextColor(Color.BLUE);
+                    temp.setClickable(true);
+                    temp.setOnClickListener(this);
+                    linearLayout.addView(temp);
+                    tv[i] = temp;
+                    i++;
                 }
             }
-            tripText.setText(trips);
         }
     }
 
@@ -541,6 +436,54 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 });
         final AlertDialog alert = alertDialog.create();
         alert.show();
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        if (mCurrentLocation == null){
+            mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        }
+        startLocationUpdates();
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        mCurrentLocation = location;
+    }
+
+    @Override
+    protected void onStart(){
+        super.onStart();
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
+        if (mGoogleApiClient.isConnected()){
+            startLocationUpdates();
+        }
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop(){
+        mGoogleApiClient.disconnect();
+        super.onStop();
     }
 }
 

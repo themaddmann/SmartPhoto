@@ -15,6 +15,8 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -27,6 +29,12 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -37,25 +45,28 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 
-public class CameraActivity extends AppCompatActivity implements View.OnClickListener {
+public class CameraActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, View.OnClickListener {
     private static final int TAKE_PICTURE = 0;
+    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 1000;
 
-    ImageView selectedImage;
-    Button bCamera, endButton, bUpload, reviewButton;
-    TextView exifData;
-    ProgressDialog dialog = null;
-    String filename, upLoadServerUrl = null, mode;
-    Bitmap chosenImage;
-    String[] filepath;
-    File[] files;
-    File imagesFolder;
-    int serverResponseCode = 0, tripid;
+    private ImageView selectedImage;
+    private Button bCamera, endButton, bUpload, reviewButton;
+    private TextView exifData;
+    private ProgressDialog dialog = null;
+    private String filename, upLoadServerUrl = null;
+    private Bitmap chosenImage;
+    private String foldername;
+    private String[] filepath;
+    private File[] files;
+    private File imagesFolder;
+    private int serverResponseCode = 0;
+    private GoogleApiClient mGoogleApiClient;
+    private LocationRequest mLocationRequest;
+    private Location mCurrentLocation;
 
-    GPSTracker gps;
     StringBuilder builder;
 
-
-    float[] latlong = new float[2];
+    private float[] latlong = new float[2];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,16 +79,12 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
 
         Bundle extras = getIntent().getExtras();
         if (extras != null){
-            mode = extras.getString("mode");
-            tripid = extras.getInt("tripid");
+            foldername = extras.getString("folder");
         }
 
-        gps = new GPSTracker(CameraActivity.this);
-
-        imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Trip_" + tripid);
-        if ("new".matches(mode)) {
-            imagesFolder.mkdirs();
-        }
+        assert foldername != null;
+        imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
+        imagesFolder.mkdir();
 
         builder = new StringBuilder();
         selectedImage = (ImageView) findViewById(R.id.selectedImage);
@@ -94,6 +101,23 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
         endButton.setOnClickListener(this);
         bUpload.setOnClickListener(this);
         reviewButton.setOnClickListener(this);
+
+        if (mGoogleApiClient == null){
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
+        createLocationRequest();
+    }
+
+    private void createLocationRequest(){
+        mLocationRequest = new LocationRequest();
+        // desired interval for updates
+        mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
+        mLocationRequest.setFastestInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
     }
 
     @Override
@@ -103,13 +127,12 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
                 if (!isLocationEnabled(this)) {
                     showSettingsAlert();
                 }
-                gps = new GPSTracker(CameraActivity.this);
                 Intent photoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                 startActivityForResult(photoIntent, TAKE_PICTURE);
                 break;
             case R.id.bUpload:
                 if(imagesFolder.listFiles().length == 0) {
-                    Toast.makeText(CameraActivity.this, "Please select a photo or take a new one", Toast.LENGTH_LONG).show();
+                    Toast.makeText(CameraActivity.this, "Please take a new one", Toast.LENGTH_LONG).show();
                 }else {
                     dialog = ProgressDialog.show(CameraActivity.this, "", "Uploading...", true);
                     files = imagesFolder.listFiles();
@@ -135,7 +158,7 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
                 break;
             case R.id.reviewTrip:
                 Intent gIntent = new Intent(CameraActivity.this, GalleryActivity.class);
-                gIntent.putExtra("tripid", tripid);
+                gIntent.putExtra("folder", foldername);
                 startActivity(gIntent);
                 break;
         }
@@ -180,13 +203,11 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
 
                 dos = new DataOutputStream(conn.getOutputStream());
 
-                String trip_id = String.valueOf(tripid);
-
                 dos.writeBytes("--" + boundary + "\r\n");
-                dos.writeBytes("Content-Disposition: form-data; name=trip_id;id=" + trip_id + "\r\n");
+                dos.writeBytes("Content-Disposition: form-data; name=foldername;id=" + foldername + "\r\n");
                 dos.writeBytes("\r\n");
 
-                dos.writeBytes(trip_id);
+                dos.writeBytes(foldername);
                 dos.writeBytes("\r\n");
                 dos.writeBytes("--" + boundary + "\r\n");
 
@@ -262,7 +283,6 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == TAKE_PICTURE && resultCode == RESULT_OK) {
-            gps = new GPSTracker(CameraActivity.this);
             chosenImage = (Bitmap) data.getExtras().get("data");
             selectedImage.setImageBitmap(chosenImage);
 
@@ -298,38 +318,65 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
             ExifInterface exifInterface = new ExifInterface(file);
 
             if (!exifInterface.getLatLong(latlong)) {
-                double latitude = gps.getLatitude();
-                double longitude = gps.getLongitude();
-                String lat = Location.convert(Math.abs(latitude), Location.FORMAT_SECONDS);
-                String lon = Location.convert(Math.abs(longitude), Location.FORMAT_SECONDS);
+                double latitude = mCurrentLocation.getLatitude();
+                double longitude = mCurrentLocation.getLongitude();
+                String lat = convertLocation(latitude);
+                String lon = convertLocation(longitude);
                 exifInterface.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, latitude < 0 ? "S" : "N");
                 exifInterface.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, longitude < 0 ? "W" : "E");
                 exifInterface.setAttribute(ExifInterface.TAG_GPS_LATITUDE, lat);
                 exifInterface.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, lon);
+
                 exifInterface.saveAttributes();
             }
 
             builder = new StringBuilder();
             builder.append("Filename: ").append(filepath[filepath.length-1]).append("\n");
             builder.append("Date & Time: ").append(exifInterface.getAttribute(ExifInterface.TAG_DATETIME)).append("\n");
-            builder.append("Trip ID: ").append(tripid).append("\n");
-            String lat = getGeoCoordinates(exifInterface.getAttribute(ExifInterface.TAG_GPS_LATITUDE));
-            String lon = getGeoCoordinates(exifInterface.getAttribute(ExifInterface.TAG_GPS_LONGITUDE));
-            builder.append("GPS Latitude: ").append(lat).append(" ").append(exifInterface.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF)).append("\n");
-            builder.append("GPS Longitude: ").append(lon).append(" ").append(exifInterface.getAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF));
+            builder.append("GPS Latitude: ").append(getGeoCoordinates(exifInterface.getAttribute(ExifInterface.TAG_GPS_LATITUDE))).append(" ").append(exifInterface.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF)).append("\n");
+            builder.append("GPS Longitude: ").append(getGeoCoordinates(exifInterface.getAttribute(ExifInterface.TAG_GPS_LONGITUDE))).append(" ").append(exifInterface.getAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF));
             exifData.setText(builder.toString());
 
         }catch (IOException e){
             e.printStackTrace();
             Toast.makeText(CameraActivity.this, e.toString(), Toast.LENGTH_LONG).show();
         }
-        latlong = new float[2];
     }
 
     private String getGeoCoordinates(String loc){
-        String[] degMinSec = loc.split(":");
-        double degrees = Double.parseDouble(degMinSec[0]) + Double.parseDouble(degMinSec[1])/60 + Double.parseDouble(degMinSec[2])/3600;
+        String[] degMinSec = loc.split(",");
+        String[] deg = degMinSec[0].split("/");
+        String[] min = degMinSec[1].split("/");
+        String[] sec = degMinSec[2].split("/");
+        double deg1 = Double.parseDouble(deg[0]);
+        double deg2 = Double.parseDouble(deg[1]);
+        double degs = deg1/deg2;
+        double min1 = Double.parseDouble(min[0]);
+        double min2 = Double.parseDouble(min[1]);
+        double mins = min1/min2;
+        double sec1 = Double.parseDouble(sec[0]);
+        double sec2 = Double.parseDouble(sec[1]);
+        double secs = sec1/sec2;
+        double degrees = degs + mins/60 + secs/3600;
         return String.valueOf(degrees);
+    }
+
+    private String convertLocation(double location){
+        location=Math.abs(location);
+        int degree = (int) location;
+        location *= 60;
+        location -= (degree * 60.0d);
+        int minute = (int) location;
+        location *= 60;
+        location -= (minute * 60.0d);
+        int second = (int) (location*1000.0d);
+
+        return String.valueOf(degree) +
+                "/1," +
+                minute +
+                "/1," +
+                second +
+                "/1000,";
     }
 
     private void showFinishAlert(){
@@ -357,9 +404,14 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
         alert.show();
     }
 
+    private void startLocationUpdates(){
+        LocationServices.FusedLocationApi.requestLocationUpdates(
+                mGoogleApiClient, mLocationRequest, this);
+    }
+
     @Override
     public void onBackPressed(){
-
+        showFinishAlert();
     }
 
     private void copyFile(File sourceFile, File destFile) throws IOException{
@@ -422,5 +474,53 @@ public class CameraActivity extends AppCompatActivity implements View.OnClickLis
                 });
         final AlertDialog alert = alertDialog.create();
         alert.show();
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        if (mCurrentLocation == null){
+            mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        }
+        startLocationUpdates();
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        mCurrentLocation = location;
+    }
+
+    @Override
+    protected void onStart(){
+        super.onStart();
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
+        if (mGoogleApiClient.isConnected()){
+            startLocationUpdates();
+        }
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop(){
+        mGoogleApiClient.disconnect();
+        super.onStop();
     }
 }

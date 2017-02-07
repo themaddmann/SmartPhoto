@@ -1,6 +1,5 @@
 package com.brianmannresearch.smartphoto;
 
-import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -16,10 +15,8 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -34,11 +31,12 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
     Bitmap currentBitmap = null;
     TextView exifData;
     ImageView defaultImage;
-    Button returnButton, viewButton, deleteButton;
+    Button returnButton, deleteButton;
 
     ArrayList<String> imagesPath;
     File[] files;
     String[] filepath;
+    String foldername;
     StringBuilder builder;
 
     @Override
@@ -48,7 +46,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
 
         Bundle extras = getIntent().getExtras();
         if (extras != null){
-            tripid = extras.getInt("tripid");
+            foldername = extras.getString("foldername");
         }
 
         defaultImage = (ImageView) findViewById(R.id.selectedImage);
@@ -56,11 +54,9 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
         exifData = (TextView) findViewById(R.id.ExifData);
 
         returnButton = (Button) findViewById(R.id.returnButton);
-        viewButton = (Button) findViewById(R.id.viewButton);
         deleteButton = (Button) findViewById(R.id.deleteButton);
 
         returnButton.setOnClickListener(this);
-        viewButton.setOnClickListener(this);
         deleteButton.setOnClickListener(this);
 
         defaultImage.setOnTouchListener(new OnSwipeTouchListener(GalleryActivity.this){
@@ -72,7 +68,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
             }
         });
 
-        imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Trip_" + tripid);
+        imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
         if (!imagesFolder.exists() && !imagesFolder.isDirectory()) {
             showExistsAlert();
         }else if (imagesFolder.exists() && imagesFolder.isDirectory() && imagesFolder.listFiles().length == 0){
@@ -258,92 +254,11 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
             case R.id.returnButton:
                 finish();
                 break;
-            case R.id.viewButton:
-                showTripAlert();
-                break;
             case R.id.deleteButton:
                 showDeleteAlert();
                 break;
         }
 
-    }
-
-    private void showTripAlert(){
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-        LayoutInflater inflater = this.getLayoutInflater();
-
-        alertDialog.setMessage("What trip number do you want to view?")
-                .setCancelable(false)
-                .setView(inflater.inflate(R.layout.trip_dialog, null))
-                .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        Dialog f = (Dialog) dialogInterface;
-                        EditText text = (EditText) f.findViewById(R.id.tripID);
-                        tripid = Integer.parseInt(text.getText().toString());
-                        imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Trip_" + tripid);
-                        if (!imagesFolder.exists() && !imagesFolder.isDirectory()) {
-                            showExistsAlert();
-                        }else if (imagesFolder.exists() && imagesFolder.isDirectory() && imagesFolder.listFiles().length == 0){
-                            showEmptyAlert();
-                        }else {
-                            imagesPath = new ArrayList<>();
-                            files = imagesFolder.listFiles();
-                            for (int j = 0; j < files.length; j++) {
-                                imagesPath.add(files[j].toString());
-                            }
-
-                            currentimage = 0;
-                            currentBitmap = BitmapFactory.decodeFile(imagesPath.get(currentimage));
-
-                            ExifInterface exif = null;
-                            try {
-                                pictureFile = new File(imagesPath.get(0));
-                                exif = new ExifInterface(pictureFile.getAbsolutePath());
-                                filepath = pictureFile.getAbsolutePath().split("/");
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-
-                            int orientation = ExifInterface.ORIENTATION_NORMAL;
-
-                            if (exif != null) {
-                                orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-                                builder = new StringBuilder();
-                                builder.append("Filename: ").append(filepath[filepath.length - 1]).append("\n");
-                                builder.append("Date & Time: ").append(exif.getAttribute(ExifInterface.TAG_DATETIME)).append("\n");
-                                builder.append("Trip ID: ").append(tripid).append("\n");
-                                String lat = getGeoCoordinates(exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE));
-                                String lon = getGeoCoordinates(exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE));
-                                builder.append("GPS Latitude: ").append(lat).append(" ").append(exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF)).append("\n");
-                                builder.append("GPS Longitude: ").append(lon).append(" ").append(exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF));
-                                exifData.setText(builder.toString());
-                            }
-
-                            switch (orientation) {
-                                case ExifInterface.ORIENTATION_ROTATE_90:
-                                    currentBitmap = rotateBitmap(currentBitmap, 90);
-                                    break;
-                                case ExifInterface.ORIENTATION_ROTATE_180:
-                                    currentBitmap = rotateBitmap(currentBitmap, 180);
-                                    break;
-                                case ExifInterface.ORIENTATION_ROTATE_270:
-                                    currentBitmap = rotateBitmap(currentBitmap, 270);
-                                    break;
-                            }
-
-                            defaultImage.setImageBitmap(currentBitmap);
-                        }
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        // do nothing
-                    }
-                });
-        final AlertDialog alert = alertDialog.create();
-        alert.show();
     }
 
     private void showDeleteAlert() {

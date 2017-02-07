@@ -7,12 +7,13 @@
     android:orientation="vertical"
     tools:context="com.brianmannresearch.smartphoto.MainActivity">
 
-    <TextView
-        android:id="@+id/tripText"
-        android:textSize="16sp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"/>
+    <LinearLayout
+        android:id="@+id/history_linear"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+    </LinearLayout>
 
     <Button
         android:id="@+id/exitButton"
@@ -29,24 +30,10 @@
         android:layout_above="@id/exitButton"/>
 
     <Button
-        android:id="@+id/tripButton"
-        android:text="@string/trip_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/deleteButton"/>
-
-    <Button
-        android:id="@+id/continueButton"
-        android:text="@string/continue_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/tripButton"/>
-
-    <Button
         android:id="@+id/startButton"
         android:text="@string/start_trip_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@id/continueButton"/>
+        android:layout_above="@id/deleteButton"/>
 
 </RelativeLayout>

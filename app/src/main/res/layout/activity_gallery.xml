@@ -24,12 +24,6 @@
             android:layout_height="wrap_content" />
 
         <Button
-            android:id="@+id/viewButton"
-            android:text="@string/trip_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <Button
             android:id="@+id/deleteButton"
             android:text="@string/delete_photo"
             android:layout_width="match_parent"
