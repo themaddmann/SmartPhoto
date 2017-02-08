@@ -132,7 +132,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
                 break;
             case R.id.bUpload:
                 if(imagesFolder.listFiles().length == 0) {
-                    Toast.makeText(CameraActivity.this, "Please take a new one", Toast.LENGTH_LONG).show();
+                    Toast.makeText(CameraActivity.this, "Please add some photos to this trip before uploading", Toast.LENGTH_LONG).show();
                 }else {
                     dialog = ProgressDialog.show(CameraActivity.this, "", "Uploading...", true);
                     files = imagesFolder.listFiles();
@@ -157,11 +157,28 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
                 showFinishAlert();
                 break;
             case R.id.reviewTrip:
-                Intent gIntent = new Intent(CameraActivity.this, GalleryActivity.class);
-                gIntent.putExtra("folder", foldername);
-                startActivity(gIntent);
-                break;
+                if (imagesFolder.listFiles().length == 0) {
+                    showEmptyAlert();
+                }else {
+                    Intent gIntent = new Intent(CameraActivity.this, GalleryActivity.class);
+                    gIntent.putExtra("foldername", foldername);
+                    startActivity(gIntent);
+                    break;
+                }
         }
+    }
+
+    private void showEmptyAlert(){
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+        alertDialog.setMessage("This trip is empty!")
+                .setCancelable(false)
+                .setNegativeButton("Ok", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                    }
+                });
+        final AlertDialog alert = alertDialog.create();
+        alert.show();
     }
 
     private int uploadPhoto(String sourceFileUri) {

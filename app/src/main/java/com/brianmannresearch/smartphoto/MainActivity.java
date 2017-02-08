@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private Location mCurrentLocation;
-    private File tripfolder, directory;
+    private File tripfolder, directory, imagesFolder;
     private File[] folders;
 
     private int tripnumber = 1;
@@ -200,12 +200,31 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             default:
                 TextView textView = (TextView) findViewById(view.getId());
                 Filename = textView.getText().toString();
-                Toast.makeText(this, Filename, Toast.LENGTH_LONG).show();
-                Intent galleryIntent = new Intent(MainActivity.this, GalleryActivity.class);
-                galleryIntent.putExtra("foldername", Filename);
-                startActivity(galleryIntent);
-                break;
+                imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), Filename);
+                if (imagesFolder.listFiles().length == 0) {
+                    showEmptyAlert();
+                }else{
+                    Toast.makeText(this, Filename, Toast.LENGTH_LONG).show();
+                    Intent galleryIntent = new Intent(MainActivity.this, GalleryActivity.class);
+                    galleryIntent.putExtra("foldername", Filename);
+                    startActivity(galleryIntent);
+                    break;
+                }
         }
+    }
+
+    private void showEmptyAlert(){
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+        alertDialog.setMessage("This trip is empty!")
+                .setCancelable(false)
+                .setNegativeButton("Ok", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        deleteDirectory(imagesFolder);
+                    }
+                });
+        final AlertDialog alert = alertDialog.create();
+        alert.show();
     }
 
     private void startLocationUpdates(){
@@ -331,6 +350,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 Log.e("-->", "file not Deleted :" + files[j].getAbsolutePath());
             }
         }
+        Directory.delete();
+        callBroadCast();
     }
 
     private void callBroadCast() {

@@ -27,7 +27,7 @@ import java.util.ArrayList;
 public class GalleryActivity extends AppCompatActivity implements View.OnClickListener {
 
     File imagesFolder, pictureFile;
-    int tripid, currentimage;
+    int currentimage;
     Bitmap currentBitmap = null;
     TextView exifData;
     ImageView defaultImage;
@@ -71,7 +71,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
         imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
         if (!imagesFolder.exists() && !imagesFolder.isDirectory()) {
             showExistsAlert();
-        }else if (imagesFolder.exists() && imagesFolder.isDirectory() && imagesFolder.listFiles().length == 0){
+        }else if (imagesFolder.listFiles().length == 0){
             showEmptyAlert();
         }else {
             imagesPath = new ArrayList<>();
@@ -85,7 +85,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
 
             ExifInterface exif = null;
             try {
-                pictureFile = new File(imagesPath.get(0));
+                pictureFile = new File(imagesPath.get(currentimage));
                 exif = new ExifInterface(pictureFile.getAbsolutePath());
                 filepath = pictureFile.getAbsolutePath().split("/");
             }catch (IOException e){
@@ -99,7 +99,6 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 builder = new StringBuilder();
                 builder.append("Filename: ").append(filepath[filepath.length - 1]).append("\n");
                 builder.append("Date & Time: ").append(exif.getAttribute(ExifInterface.TAG_DATETIME)).append("\n");
-                builder.append("Trip ID: ").append(tripid).append("\n");
                 String lat = getGeoCoordinates(exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE));
                 String lon = getGeoCoordinates(exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE));
                 builder.append("GPS Latitude: ").append(lat).append(" ").append(exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF)).append("\n");
@@ -144,6 +143,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 .setNegativeButton("Ok", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
+                        imagesFolder.delete();
                         finish();
                     }
                 });
@@ -181,7 +181,6 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 builder = new StringBuilder();
                 builder.append("Filename: ").append(filepath[filepath.length - 1]).append("\n");
                 builder.append("Date & Time: ").append(exif.getAttribute(ExifInterface.TAG_DATETIME)).append("\n");
-                builder.append("Trip ID: ").append(tripid).append("\n");
                 String lat = getGeoCoordinates(exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE));
                 String lon = getGeoCoordinates(exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE));
                 builder.append("GPS Latitude: ").append(lat).append(" ").append(exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF)).append("\n");
@@ -225,7 +224,6 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 builder = new StringBuilder();
                 builder.append("Filename: ").append(filepath[filepath.length - 1]).append("\n");
                 builder.append("Date & Time: ").append(exif.getAttribute(ExifInterface.TAG_DATETIME)).append("\n");
-                builder.append("Trip ID: ").append(tripid).append("\n");
                 String lat = getGeoCoordinates(exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE));
                 String lon = getGeoCoordinates(exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE));
                 builder.append("GPS Latitude: ").append(lat).append(" ").append(exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF)).append("\n");
@@ -270,7 +268,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        deleteandscan(getApplicationContext(), pictureFile.getAbsolutePath(),pictureFile);
+                        deleteandscan(getApplicationContext(), pictureFile.getAbsolutePath(), pictureFile);
                     }
                 })
                 .setNegativeButton("No", new DialogInterface.OnClickListener() {
@@ -283,9 +281,10 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
         alert.show();
     }
 
-    private void deleteandscan(final Context context, String path, final File FileorDirectory) {
+    private void deleteandscan(final Context context, final String path, final File FileorDirectory) {
         String fpath = path.substring(path.lastIndexOf("/") + 1);
         Log.i("fpath", fpath);
+        FileorDirectory.delete();
         try{
             MediaScannerConnection.scanFile(context, new String[]{Environment
                             .getExternalStorageDirectory().toString()
@@ -297,8 +296,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                             if (uri != null){
                                 context.getContentResolver().delete(uri, null, null);
                             }
-                            FileorDirectory.delete();
-                            System.out.println("file deleted: " + FileorDirectory.getPath());
+                            System.out.println("file deleted: " + path);
                             Log.i("ExternalStorage", "Scanned " + s + ":");
                             Log.i("ExternalStorage", "-> uri=" + uri);
                         }
