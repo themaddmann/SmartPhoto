@@ -1,6 +1,5 @@
 package com.brianmannresearch.smartphoto;
 
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -14,7 +13,6 @@ import android.os.Environment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -26,18 +24,19 @@ import java.util.ArrayList;
 
 public class GalleryActivity extends AppCompatActivity implements View.OnClickListener {
 
-    File imagesFolder, pictureFile;
-    int currentimage;
-    Bitmap currentBitmap = null;
-    TextView exifData;
-    ImageView defaultImage;
-    Button returnButton, deleteButton;
+    private File imagesFolder, pictureFile;
+    private int currentimage;
+    private Bitmap currentBitmap = null;
+    private TextView exifData;
+    private ImageView defaultImage;
+    private Button returnButton, deleteButton, mapButton;
 
-    ArrayList<String> imagesPath;
-    File[] files;
-    String[] filepath;
-    String foldername;
-    StringBuilder builder;
+    private ArrayList<String> imagesPath;
+    private File[] files;
+    private String[] filepath;
+    private String foldername;
+    private StringBuilder builder;
+    private Boolean isempty = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,9 +54,11 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
 
         returnButton = (Button) findViewById(R.id.returnButton);
         deleteButton = (Button) findViewById(R.id.deleteButton);
+        mapButton = (Button) findViewById(R.id.mapButton);
 
         returnButton.setOnClickListener(this);
         deleteButton.setOnClickListener(this);
+        mapButton.setOnClickListener(this);
 
         defaultImage.setOnTouchListener(new OnSwipeTouchListener(GalleryActivity.this){
             public void onSwipeRight(){
@@ -73,6 +74,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
             showExistsAlert();
         }else if (imagesFolder.listFiles().length == 0){
             showEmptyAlert();
+            isempty = true;
         }else {
             imagesPath = new ArrayList<>();
             files = imagesFolder.listFiles();
@@ -129,7 +131,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 .setNegativeButton("Ok", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        finish();
+                        isempty = true;
                     }
                 });
         final AlertDialog alert = alertDialog.create();
@@ -143,8 +145,12 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 .setNegativeButton("Ok", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
+                        String path = imagesFolder.getAbsolutePath();
                         imagesFolder.delete();
+                        scanFile(path);
+                        Intent intent = getIntent();
                         finish();
+                        startActivity(intent);
                     }
                 });
         final AlertDialog alert = alertDialog.create();
@@ -250,11 +256,21 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
     public void onClick(View view) {
         switch (view.getId()){
             case R.id.returnButton:
+                Intent data = new Intent();
+                String text = "Finished";
+                data.setData(Uri.parse(text));
+                setResult(RESULT_OK, data);
                 finish();
                 break;
             case R.id.deleteButton:
-                showDeleteAlert();
+                if (!isempty) {
+                    showDeleteAlert();
+                }
                 break;
+            case R.id.mapButton:
+                Intent mapsIntent = new Intent(GalleryActivity.this, MapsActivity.class);
+                mapsIntent.putExtra("foldername", foldername);
+                startActivity(mapsIntent);
         }
 
     }
@@ -268,7 +284,12 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        deleteandscan(getApplicationContext(), pictureFile.getAbsolutePath(), pictureFile);
+                        String path = pictureFile.getAbsolutePath();
+                        pictureFile.delete();
+                        scanFile(path);
+                        Intent intent = getIntent();
+                        finish();
+                        startActivity(intent);
                     }
                 })
                 .setNegativeButton("No", new DialogInterface.OnClickListener() {
@@ -281,32 +302,12 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
         alert.show();
     }
 
-    private void deleteandscan(final Context context, final String path, final File FileorDirectory) {
-        String fpath = path.substring(path.lastIndexOf("/") + 1);
-        Log.i("fpath", fpath);
-        FileorDirectory.delete();
-        try{
-            MediaScannerConnection.scanFile(context, new String[]{Environment
-                            .getExternalStorageDirectory().toString()
-                            + "/images/"
-                            + fpath}, null,
-                    new MediaScannerConnection.OnScanCompletedListener() {
-                        @Override
-                        public void onScanCompleted(String s, Uri uri) {
-                            if (uri != null){
-                                context.getContentResolver().delete(uri, null, null);
-                            }
-                            System.out.println("file deleted: " + path);
-                            Log.i("ExternalStorage", "Scanned " + s + ":");
-                            Log.i("ExternalStorage", "-> uri=" + uri);
-                        }
-                    });
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-        Intent intent = getIntent();
-        finish();
-        startActivity(intent);
+    private void scanFile(String path){
+        MediaScannerConnection.scanFile(GalleryActivity.this, new String[] { path }, null,
+                new MediaScannerConnection.OnScanCompletedListener(){
+                    public void onScanCompleted(String path, Uri uri){
+                    }
+                });
     }
 
     private String getGeoCoordinates(String loc){

@@ -40,7 +40,7 @@ import com.google.android.gms.location.LocationServices;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, View.OnClickListener {
 
-    private static final int CAMERA_INTENT = 1, LOCATION_REQUEST = 2, WRITE_STORAGE_REQUEST = 4, READ_STORAGE_REQUEST = 5, CAMERA_REQUEST = 6;
+    private static final int CAMERA_INTENT = 1, LOCATION_REQUEST = 2, WRITE_STORAGE_REQUEST = 4, READ_STORAGE_REQUEST = 5, CAMERA_REQUEST = 6, GALLERY = 7;
     private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 1000;
 
     private Button startButton, exitButton, deleteButton;
@@ -207,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                     Toast.makeText(this, Filename, Toast.LENGTH_LONG).show();
                     Intent galleryIntent = new Intent(MainActivity.this, GalleryActivity.class);
                     galleryIntent.putExtra("foldername", Filename);
-                    startActivity(galleryIntent);
+                    startActivityForResult(galleryIntent, GALLERY);
                     break;
                 }
         }
@@ -272,6 +272,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                             for (TextView textView : tv){
                                 linearLayout.removeView(textView);
                             }
+                            directory = new File(String.valueOf(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
                             folders = directory.listFiles();
                             int size = folders.length;
                             tv = new TextView[size];
@@ -392,6 +393,36 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             for (TextView textView : tv){
                 linearLayout.removeView(textView);
             }
+            directory = new File(String.valueOf(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
+            folders = directory.listFiles();
+            int size = folders.length;
+            tv = new TextView[size];
+            TextView temp;
+            String textview = "Existing Trips:";
+            temp = new TextView(this);
+            temp.setText(textview);
+            int i = 0;
+            for (File file : folders) {
+                if (file.toString().matches("\\S*Trip_\\d*")) {
+                    temp = new TextView(this);
+                    temp.setId(i);
+                    String[] split = file.toString().split("/");
+                    int index = split.length;
+                    textview = split[index-1];
+                    temp.setText(textview);
+                    temp.setTextColor(Color.BLUE);
+                    temp.setClickable(true);
+                    temp.setOnClickListener(this);
+                    linearLayout.addView(temp);
+                    tv[i] = temp;
+                    i++;
+                }
+            }
+        }else if (requestCode == GALLERY && resultCode == RESULT_OK){
+            for (TextView textView : tv){
+                linearLayout.removeView(textView);
+            }
+            directory = new File(String.valueOf(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
             folders = directory.listFiles();
             int size = folders.length;
             tv = new TextView[size];
