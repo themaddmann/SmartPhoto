@@ -61,7 +61,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 exif = new ExifInterface(files[j].getAbsolutePath());
                 int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
                 Bitmap currentBitmap = BitmapFactory.decodeFile(files[j].getAbsolutePath());
-                Bitmap scaledBitmap = Bitmap.createScaledBitmap(currentBitmap, currentBitmap.getWidth()/50, currentBitmap.getHeight()/20, true);
+                Bitmap scaledBitmap = Bitmap.createScaledBitmap(currentBitmap, currentBitmap.getWidth()/25, currentBitmap.getHeight()/25, true);
                 String time = exif.getAttribute(ExifInterface.TAG_DATETIME);
                 String lat = getGeoCoordinates(exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE));
                 double latitude = Double.valueOf(lat);

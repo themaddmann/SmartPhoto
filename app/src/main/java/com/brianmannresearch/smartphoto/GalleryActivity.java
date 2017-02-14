@@ -13,10 +13,12 @@ import android.os.Environment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,9 +72,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
         });
 
         imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
-        if (!imagesFolder.exists() && !imagesFolder.isDirectory()) {
-            showExistsAlert();
-        }else if (imagesFolder.listFiles().length == 0){
+        if (imagesFolder.listFiles().length == 0){
             showEmptyAlert();
             isempty = true;
         }else {
@@ -124,20 +124,6 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
-    private void showExistsAlert(){
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-        alertDialog.setMessage("This trip does not exist!")
-                .setCancelable(false)
-                .setNegativeButton("Ok", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        isempty = true;
-                    }
-                });
-        final AlertDialog alert = alertDialog.create();
-        alert.show();
-    }
-
     private void showEmptyAlert(){
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         alertDialog.setMessage("This trip is empty!")
@@ -145,12 +131,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 .setNegativeButton("Ok", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        String path = imagesFolder.getAbsolutePath();
-                        imagesFolder.delete();
-                        scanFile(path);
-                        Intent intent = getIntent();
-                        finish();
-                        startActivity(intent);
+
                     }
                 });
         final AlertDialog alert = alertDialog.create();
@@ -275,6 +256,16 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
 
     }
 
+    private void deleteRecursive(File fileOrDirectory) {
+        if (fileOrDirectory.isDirectory())
+            for (File child : fileOrDirectory.listFiles())
+                deleteRecursive(child);
+
+        String dir = fileOrDirectory.getAbsolutePath();
+        fileOrDirectory.delete();
+        callBroadCast(dir);
+    }
+
     private void showDeleteAlert() {
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
 
@@ -284,9 +275,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        String path = pictureFile.getAbsolutePath();
-                        pictureFile.delete();
-                        scanFile(path);
+                        deleteRecursive(pictureFile);
                         Intent intent = getIntent();
                         finish();
                         startActivity(intent);
@@ -302,12 +291,15 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
         alert.show();
     }
 
-    private void scanFile(String path){
-        MediaScannerConnection.scanFile(GalleryActivity.this, new String[] { path }, null,
-                new MediaScannerConnection.OnScanCompletedListener(){
-                    public void onScanCompleted(String path, Uri uri){
-                    }
-                });
+    private void callBroadCast(String dir) {
+        MediaScannerConnection.scanFile(this, new String[]{dir}, null, new MediaScannerConnection.OnScanCompletedListener() {
+            @Override
+            public void onScanCompleted(String path, Uri uri) {
+                Toast.makeText(GalleryActivity.this, "Scanned", Toast.LENGTH_LONG).show();
+                Log.e("ExternalStorage", "Scanned " + path + ":");
+                Log.e("ExternalStorage", "-> uri=" + uri);
+            }
+        });
     }
 
     private String getGeoCoordinates(String loc){

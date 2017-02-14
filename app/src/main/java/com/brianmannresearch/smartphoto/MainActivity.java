@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private File tripfolder, directory, imagesFolder;
     private File[] folders;
 
-    private int tripnumber = 1;
+    private int tripnumber;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -160,14 +160,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                             Toast.makeText(MainActivity.this, "Please enter a username", Toast.LENGTH_LONG).show();
                         }else {
                             username = input;
-                            // check for previous trips in order to know which trip number should be instantiated
-                            folders = directory.listFiles();
-                            for (File file : folders) {
-                                filename = file.toString().split("/");
-                                if (filename[filename.length - 1].matches(username + "\\S*Trip_\\d*")) {
-                                    tripnumber++;
-                                }
-                            }
                         }
                     }
                 })
@@ -186,6 +178,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.startButton:
+                // check for previous trips in order to know which trip number should be instantiated
+                folders = directory.listFiles();
+                tripnumber = 1;
+                for (File file : folders) {
+                    filename = file.toString().split("/");
+                    if (filename[filename.length - 1].matches(username + "\\S*Trip_\\d*")) {
+                        tripnumber++;
+                    }
+                }
                 String foldername = username+ "_Trip_" + tripnumber;
                 Intent cameraIntent = new Intent(MainActivity.this, CameraActivity.class);
                 cameraIntent.putExtra("folder", foldername);
@@ -201,7 +202,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 TextView textView = (TextView) findViewById(view.getId());
                 Filename = textView.getText().toString();
                 imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), Filename);
-                if (imagesFolder.listFiles().length == 0) {
+                if (imagesFolder.listFiles().length == 0 || !imagesFolder.exists()){
                     showEmptyAlert();
                 }else{
                     Toast.makeText(this, Filename, Toast.LENGTH_LONG).show();
@@ -220,7 +221,35 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 .setNegativeButton("Ok", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        deleteDirectory(imagesFolder);
+                        deleteRecursive(imagesFolder);
+                        for (TextView textView : tv){
+                            linearLayout.removeView(textView);
+                        }
+                        directory = new File(String.valueOf(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
+                        folders = directory.listFiles();
+                        int size = folders.length;
+                        tv = new TextView[size];
+                        TextView temp;
+                        String textview = "Existing Trips:";
+                        temp = new TextView(MainActivity.this);
+                        temp.setText(textview);
+                        int j = 0;
+                        for (File file : folders) {
+                            if (file.toString().matches("\\S*Trip_\\d*")) {
+                                temp = new TextView(MainActivity.this);
+                                temp.setId(j);
+                                String[] split = file.toString().split("/");
+                                int index = split.length;
+                                textview = split[index-1];
+                                temp.setText(textview);
+                                temp.setTextColor(Color.BLUE);
+                                temp.setClickable(true);
+                                temp.setOnClickListener(MainActivity.this);
+                                linearLayout.addView(temp);
+                                tv[j] = temp;
+                                j++;
+                            }
+                        }
                     }
                 });
         final AlertDialog alert = alertDialog.create();
@@ -268,7 +297,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         if (!tripfolder.exists() && !tripfolder.isDirectory()) {
                             showExistsAlert();
                         } else {
-                            deleteDirectory(tripfolder);
+                            deleteRecursive(tripfolder);
                             for (TextView textView : tv){
                                 linearLayout.removeView(textView);
                             }
@@ -341,35 +370,26 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         alert.show();
     }
 
-    private void deleteDirectory(final File Directory){
-        File[] files = Directory.listFiles();
-        for (int j = 0; j < files.length; j++) {
-            if (files[j].delete()){
-                Log.e("-->", "file Deleted :" + files[j].getAbsolutePath());
-                callBroadCast();
-            }else{
-                Log.e("-->", "file not Deleted :" + files[j].getAbsolutePath());
-            }
-        }
-        Directory.delete();
-        callBroadCast();
+
+    private void deleteRecursive(File fileOrDirectory) {
+        if (fileOrDirectory.isDirectory())
+            for (File child : fileOrDirectory.listFiles())
+                deleteRecursive(child);
+
+        String dir = fileOrDirectory.getAbsolutePath();
+        fileOrDirectory.delete();
+        callBroadCast(dir);
     }
 
-    private void callBroadCast() {
-        if (Build.VERSION.SDK_INT >= 14){
-            MediaScannerConnection.scanFile(this, new String[]{Environment.getExternalStorageDirectory().toString()}, null, new MediaScannerConnection.OnScanCompletedListener() {
-                @Override
-                public void onScanCompleted(String path, Uri uri) {
-                    Toast.makeText(MainActivity.this, "Scanned", Toast.LENGTH_LONG).show();
-                    Log.e("ExternalStorage", "Scanned " + path + ":");
-                    Log.e("ExternalStorage", "-> uri=" + uri);
-                }
-            });
-        }else{
-            Log.e("-->", " < 14");
-            sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED,
-                    Uri.parse("file://" + Environment.getExternalStorageDirectory())));
-        }
+    private void callBroadCast(String dir) {
+        MediaScannerConnection.scanFile(this, new String[]{dir}, null, new MediaScannerConnection.OnScanCompletedListener() {
+            @Override
+            public void onScanCompleted(String path, Uri uri) {
+                Toast.makeText(MainActivity.this, "Scanned", Toast.LENGTH_LONG).show();
+                Log.e("ExternalStorage", "Scanned " + path + ":");
+                Log.e("ExternalStorage", "-> uri=" + uri);
+            }
+        });
     }
 
     private void showExistsAlert(){
