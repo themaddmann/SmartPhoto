@@ -30,12 +30,6 @@
             android:layout_height="wrap_content" />
 
         <Button
-            android:id="@+id/bUpload"
-            android:text="@string/upload_button_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <Button
             android:id="@+id/reviewTrip"
             android:text="@string/review_trip"
             android:layout_width="match_parent"
