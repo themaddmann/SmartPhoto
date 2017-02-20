@@ -190,6 +190,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 String foldername = username+ "_Trip_" + tripnumber;
                 Intent cameraIntent = new Intent(MainActivity.this, CameraActivity.class);
                 cameraIntent.putExtra("folder", foldername);
+                cameraIntent.putExtra("mode", "new");
                 startActivityForResult(cameraIntent, CAMERA_INTENT);
                 break;
             case R.id.exitButton:

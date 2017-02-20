@@ -32,12 +32,14 @@ import java.util.ArrayList;
 
 public class GalleryActivity extends AppCompatActivity implements View.OnClickListener {
 
+    private static int CAMERA_INTENT = 1;
+
     private File imagesFolder, pictureFile;
     private int currentimage;
     private Bitmap currentBitmap = null;
     private TextView exifData;
     private ImageView defaultImage;
-    private Button returnButton, deleteButton, mapButton, uploadButton;
+    private Button returnButton, deleteButton, mapButton, uploadButton, resumeButton;
     private ProgressDialog dialog = null;
 
     private ArrayList<String> imagesPath;
@@ -68,11 +70,13 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
         deleteButton = (Button) findViewById(R.id.deleteButton);
         mapButton = (Button) findViewById(R.id.mapButton);
         uploadButton = (Button) findViewById(R.id.bUpload);
+        resumeButton = (Button) findViewById(R.id.continueButton);
 
         returnButton.setOnClickListener(this);
         deleteButton.setOnClickListener(this);
         uploadButton.setOnClickListener(this);
         mapButton.setOnClickListener(this);
+        resumeButton.setOnClickListener(this);
 
         defaultImage.setOnTouchListener(new OnSwipeTouchListener(GalleryActivity.this){
             public void onSwipeRight(){
@@ -363,6 +367,12 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
     @Override
     public void onClick(View view) {
         switch (view.getId()){
+            case R.id.continueButton:
+                Intent cameraIntent = new Intent(GalleryActivity.this, CameraActivity.class);
+                cameraIntent.putExtra("folder", foldername);
+                cameraIntent.putExtra("mode", "continue");
+                startActivityForResult(cameraIntent, CAMERA_INTENT);
+                break;
             case R.id.returnButton:
                 Intent data = new Intent();
                 String text = "Finished";
@@ -405,6 +415,16 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 break;
         }
 
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == CAMERA_INTENT && resultCode == RESULT_OK) {
+            Intent intent = getIntent();
+            finish();
+            startActivity(intent);
+        }
     }
 
     private void deleteRecursive(File fileOrDirectory) {

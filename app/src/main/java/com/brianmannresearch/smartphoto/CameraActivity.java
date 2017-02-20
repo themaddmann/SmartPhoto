@@ -44,11 +44,11 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
     private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 1000;
 
     private ImageView selectedImage;
-    private Button bCamera, endButton, reviewButton;
+    private Button bCamera, endButton;
     private TextView exifData;
     private String filename;
     private Bitmap chosenImage;
-    private String foldername;
+    private String foldername, mode;
     private String[] filepath;
     private File imagesFolder;
     private GoogleApiClient mGoogleApiClient;
@@ -71,22 +71,23 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
         Bundle extras = getIntent().getExtras();
         if (extras != null){
             foldername = extras.getString("folder");
+            mode = extras.getString("mode");
         }
 
         assert foldername != null;
         imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
-        imagesFolder.mkdir();
+        if (mode.matches("new")) {
+            imagesFolder.mkdir();
+        }
 
         builder = new StringBuilder();
         selectedImage = (ImageView) findViewById(R.id.selectedImage);
         bCamera = (Button) findViewById(R.id.bCamera);
         endButton = (Button) findViewById(R.id.endButton);
         exifData = (TextView) findViewById(R.id.ExifData);
-        reviewButton = (Button) findViewById(R.id.reviewTrip);
 
         bCamera.setOnClickListener(this);
         endButton.setOnClickListener(this);
-        reviewButton.setOnClickListener(this);
 
         if (mGoogleApiClient == null){
             mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -119,29 +120,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
             case R.id.endButton:
                 showFinishAlert();
                 break;
-            case R.id.reviewTrip:
-                if (imagesFolder.listFiles().length == 0) {
-                    showEmptyAlert();
-                }else {
-                    Intent gIntent = new Intent(CameraActivity.this, GalleryActivity.class);
-                    gIntent.putExtra("foldername", foldername);
-                    startActivity(gIntent);
-                    break;
-                }
         }
-    }
-
-    private void showEmptyAlert(){
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-        alertDialog.setMessage("This trip is empty!")
-                .setCancelable(false)
-                .setNegativeButton("Ok", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                    }
-                });
-        final AlertDialog alert = alertDialog.create();
-        alert.show();
     }
 
     @Override

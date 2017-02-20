@@ -1,46 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="10dp"
     tools:context="com.brianmannresearch.smartphoto.CameraActivity">
 
-    <LinearLayout
-        android:orientation="vertical"
+    <Button
+        android:id="@+id/bCamera"
+        android:layout_alignParentTop="true"
+        android:text="@string/camera_button_name"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content" />
 
-        <Button
-            android:id="@+id/bCamera"
-            android:text="@string/camera_button_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+    <Button
+        android:id="@+id/endButton"
+        android:text="@string/end_trip_button"
+        android:layout_alignParentBottom="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
-        <ImageView
-            android:id="@+id/selectedImage"
-            android:layout_gravity="center_horizontal"
-            android:layout_width="300dp"
-            android:layout_height="300dp"
-            android:contentDescription="@string/desc" />
+    <TextView
+        android:id="@+id/ExifData"
+        android:layout_above="@id/endButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 
-        <TextView
-            android:id="@+id/ExifData"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+    <ImageView
+        android:id="@+id/selectedImage"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_below="@id/bCamera"
+        android:layout_above="@id/ExifData"
+        android:contentDescription="@string/desc"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true" />
 
-        <Button
-            android:id="@+id/reviewTrip"
-            android:text="@string/review_trip"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <Button
-            android:id="@+id/endButton"
-            android:text="@string/end_trip_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-    </LinearLayout>
-
-</ScrollView>
+</RelativeLayout>
