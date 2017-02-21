@@ -33,5 +33,5 @@
     <string name="review_trip">Review Current Trip</string>
     <string name="title_activity_maps">Trip_Map</string>
     <string name="map_button">View On Map</string>
-    <string name="text">Text goes here</string>
+    <string name="images_button">View Images</string>
 </resources>

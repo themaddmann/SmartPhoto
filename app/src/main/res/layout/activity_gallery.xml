@@ -1,58 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="10dp"
     tools:context="com.brianmannresearch.smartphoto.GalleryActivity">
 
-    <LinearLayout
-        android:orientation="vertical"
+    <Button
+        android:id="@+id/mapButton"
+        android:text="@string/map_button"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true" />
 
-        <ImageView
-            android:id="@+id/selectedImage"
-            android:layout_gravity="center_horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="300dp"
-            android:contentDescription="@string/desc" />
+    <Button
+        android:id="@+id/continueButton"
+        android:layout_above="@id/mapButton"
+        android:text="@string/continue_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
-        <TextView
-            android:id="@+id/ExifData"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+    <Button
+        android:id="@+id/viewImagesButton"
+        android:layout_above="@id/continueButton"
+        android:text="@string/images_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
-        <Button
-            android:id="@+id/continueButton"
-            android:text="@string/continue_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+    <Button
+        android:id="@+id/bUpload"
+        android:layout_below="@id/mapButton"
+        android:text="@string/upload_button_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
-        <Button
-            android:id="@+id/mapButton"
-            android:text="@string/map_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+    <Button
+        android:id="@+id/returnButton"
+        android:layout_below="@id/bUpload"
+        android:text="@string/return_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
-        <Button
-            android:id="@+id/bUpload"
-            android:text="@string/upload_button_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <Button
-            android:id="@+id/deleteButton"
-            android:text="@string/delete_photo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <Button
-            android:id="@+id/returnButton"
-            android:text="@string/return_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-    </LinearLayout>
-
-</ScrollView>
+</RelativeLayout>
