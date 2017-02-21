@@ -6,12 +6,32 @@
     android:padding="10dp"
     tools:context="com.brianmannresearch.smartphoto.GalleryActivity">
 
+    <TextView
+        android:id="@+id/tripinfo"
+        android:layout_alignParentTop="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/returnButton"
+        android:text="@string/return_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true" />
+
+    <Button
+        android:id="@+id/bUpload"
+        android:text="@string/upload_button_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/returnButton" />
+
     <Button
         android:id="@+id/mapButton"
         android:text="@string/map_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true" />
+        android:layout_above="@+id/bUpload" />
 
     <Button
         android:id="@+id/continueButton"
@@ -24,20 +44,6 @@
         android:id="@+id/viewImagesButton"
         android:layout_above="@id/continueButton"
         android:text="@string/images_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <Button
-        android:id="@+id/bUpload"
-        android:layout_below="@id/mapButton"
-        android:text="@string/upload_button_name"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <Button
-        android:id="@+id/returnButton"
-        android:layout_below="@id/bUpload"
-        android:text="@string/return_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 

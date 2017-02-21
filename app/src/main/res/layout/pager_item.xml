@@ -2,16 +2,24 @@
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:weightSum="1">
 
     <ImageView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
         android:id="@+id/imageView"
-        android:contentDescription="@string/desc" />
+        android:contentDescription="@string/desc"
+        android:layout_weight="0.67" />
 
     <TextView
         android:id="@+id/ExifData"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/deleteButton"
+        android:text="@string/delete_photo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 

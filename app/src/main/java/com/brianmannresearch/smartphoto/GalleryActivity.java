@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.DataOutputStream;
@@ -28,6 +29,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
 
     private File imagesFolder;
     private Button returnButton, mapButton, uploadButton, resumeButton, imagesButton;
+    private TextView tripinfo;
     private ProgressDialog dialog = null;
 
     private File[] files;
@@ -53,6 +55,8 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
         resumeButton = (Button) findViewById(R.id.continueButton);
         imagesButton = (Button) findViewById(R.id.viewImagesButton);
 
+        tripinfo = (TextView) findViewById(R.id.tripinfo);
+
         returnButton.setOnClickListener(this);
         uploadButton.setOnClickListener(this);
         mapButton.setOnClickListener(this);
@@ -64,6 +68,10 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
             isempty = true;
             showEmptyAlert();
         }
+
+        String sb = foldername + '\n' +
+                "Number of photos in this trip: " + imagesFolder.listFiles().length;
+        tripinfo.setText(sb);
     }
 
     private int uploadPhoto(String sourceFileUri) {
@@ -306,17 +314,5 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 Log.e("ExternalStorage", "-> uri=" + uri);
             }
         });
-    }
-
-    private String getGeoCoordinates(String loc){
-        String[] degMinSec = loc.split(",");
-        String[] deg = degMinSec[0].split("/");
-        String[] min = degMinSec[1].split("/");
-        String[] sec = degMinSec[2].split("/");
-        double degree = Double.parseDouble(deg[0])/Double.parseDouble(deg[1]);
-        double minute = Double.parseDouble(min[0])/Double.parseDouble(min[1]);
-        double second = Double.parseDouble(sec[0])/Double.parseDouble(sec[1]);
-        double degrees = degree + minute/60 + second/3600;
-        return String.valueOf(degrees);
     }
 }
