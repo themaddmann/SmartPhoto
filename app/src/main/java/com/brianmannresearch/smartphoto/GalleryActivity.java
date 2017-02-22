@@ -4,7 +4,6 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 
-import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Environment;
 import android.support.v7.app.AlertDialog;
@@ -25,7 +24,7 @@ import java.net.URL;
 
 public class GalleryActivity extends AppCompatActivity implements View.OnClickListener {
 
-    private static int CAMERA_INTENT = 1;
+    private static int CAMERA_INTENT = 1, VIEW_INTENT = 2;
 
     private File imagesFolder;
     private Button returnButton, mapButton, uploadButton, resumeButton, imagesButton;
@@ -210,7 +209,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 if (!isempty) {
                     Intent imagesIntent = new Intent(GalleryActivity.this, ImageActivity.class);
                     imagesIntent.putExtra("foldername", foldername);
-                    startActivity(imagesIntent);
+                    startActivityForResult(imagesIntent, VIEW_INTENT);
                 }
                 break;
             case R.id.continueButton:
@@ -267,52 +266,10 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
             Intent intent = getIntent();
             finish();
             startActivity(intent);
+        }else if (requestCode == VIEW_INTENT && resultCode == RESULT_OK){
+            Intent intent = getIntent();
+            finish();
+            startActivity(intent);
         }
-    }
-
-    private void deleteRecursive(File fileOrDirectory) {
-        if (fileOrDirectory.isDirectory())
-            for (File child : fileOrDirectory.listFiles())
-                deleteRecursive(child);
-
-        String dir = fileOrDirectory.getAbsolutePath();
-        fileOrDirectory.delete();
-        callBroadCast(dir);
-    }
-
-    /*private void showDeleteAlert() {
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-
-        alertDialog.setTitle("Delete");
-        alertDialog.setMessage("Are you sure you want to delete this photo?")
-                .setCancelable(false)
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        deleteRecursive(pictureFile);
-                        Intent intent = getIntent();
-                        finish();
-                        startActivity(intent);
-                    }
-                })
-                .setNegativeButton("No", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        // do nothing
-                    }
-                });
-        final AlertDialog alert = alertDialog.create();
-        alert.show();
-    }*/
-
-    private void callBroadCast(String dir) {
-        MediaScannerConnection.scanFile(this, new String[]{dir}, null, new MediaScannerConnection.OnScanCompletedListener() {
-            @Override
-            public void onScanCompleted(String path, Uri uri) {
-                Toast.makeText(GalleryActivity.this, "Scanned", Toast.LENGTH_LONG).show();
-                Log.e("ExternalStorage", "Scanned " + path + ":");
-                Log.e("ExternalStorage", "-> uri=" + uri);
-            }
-        });
     }
 }

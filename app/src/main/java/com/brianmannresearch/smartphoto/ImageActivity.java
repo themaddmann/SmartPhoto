@@ -1,15 +1,21 @@
 package com.brianmannresearch.smartphoto;
 
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Environment;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,15 +23,19 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
 
-public class ImageActivity extends AppCompatActivity {
+public class ImageActivity extends AppCompatActivity implements View.OnClickListener{
 
     private CustomPagerAdapter mCustomPagerAdapter;
     private ViewPager mViewPager;
     private String foldername;
+    private Button deleteButton;
+    private File imagesFolder;
+    private File[] files;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,23 +47,86 @@ public class ImageActivity extends AppCompatActivity {
             foldername = extras.getString("foldername");
         }
 
+        imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
+        files = imagesFolder.listFiles();
+
         mCustomPagerAdapter = new CustomPagerAdapter(this, foldername);
 
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mCustomPagerAdapter);
+        deleteButton = (Button) findViewById(R.id.deleteButton);
+
+        deleteButton.setOnClickListener(this);
+    }
+
+    private void showDeleteAlert() {
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+
+        alertDialog.setTitle("Delete");
+        alertDialog.setMessage("Are you sure you want to delete this photo?")
+                .setCancelable(false)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        int index = mViewPager.getCurrentItem();
+                        File currfile = files[index];
+                        deleteRecursive(currfile);
+                        Intent data = new Intent();
+                        String text = "Finished";
+                        data.setData(Uri.parse(text));
+                        setResult(RESULT_OK, data);
+                        finish();
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // do nothing
+                    }
+                });
+        final AlertDialog alert = alertDialog.create();
+        alert.show();
+    }
+
+    private void deleteRecursive(File fileOrDirectory) {
+        if (fileOrDirectory.isDirectory())
+            for (File child : fileOrDirectory.listFiles())
+                deleteRecursive(child);
+
+        String dir = fileOrDirectory.getAbsolutePath();
+        fileOrDirectory.delete();
+        callBroadCast(dir);
+    }
+
+    private void callBroadCast(String dir) {
+        MediaScannerConnection.scanFile(this, new String[]{dir}, null, new MediaScannerConnection.OnScanCompletedListener() {
+            @Override
+            public void onScanCompleted(String path, Uri uri) {
+                Toast.makeText(ImageActivity.this, "Scanned", Toast.LENGTH_LONG).show();
+                Log.e("ExternalStorage", "Scanned " + path + ":");
+                Log.e("ExternalStorage", "-> uri=" + uri);
+            }
+        });
+    }
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()){
+            case R.id.deleteButton:
+                showDeleteAlert();
+                break;
+        }
     }
 }
 
-class CustomPagerAdapter extends PagerAdapter implements View.OnClickListener{
+class CustomPagerAdapter extends PagerAdapter{
 
     private LayoutInflater mLayoutInflater;
     private File imagesFolder;
     private File[] files;
-    private TextView ExifData;
 
     CustomPagerAdapter(Context context, String foldername) {
         mLayoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
         imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
         files = imagesFolder.listFiles();
     }
@@ -79,9 +152,7 @@ class CustomPagerAdapter extends PagerAdapter implements View.OnClickListener{
         View itemView = mLayoutInflater.inflate(R.layout.pager_item, container, false);
 
         ImageView imageView = (ImageView) itemView.findViewById(R.id.imageView);
-        Button deleteButton = (Button) itemView.findViewById(R.id.deleteButton);
-        deleteButton.setOnClickListener(this);
-        ExifData = (TextView) itemView.findViewById(R.id.ExifData);
+        TextView ExifData = (TextView) itemView.findViewById(R.id.ExifData);
         Bitmap bitmap = null;
         try{
             ExifInterface exif = new ExifInterface(files[position].getAbsolutePath());
@@ -117,15 +188,6 @@ class CustomPagerAdapter extends PagerAdapter implements View.OnClickListener{
     @Override
     public void destroyItem(ViewGroup container, int position, Object object) {
         container.removeView((LinearLayout) object);
-    }
-
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()){
-            case R.id.deleteButton:
-
-                break;
-        }
     }
 
     private String getGeoCoordinates(String loc){
