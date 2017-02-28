@@ -42,14 +42,17 @@ public class ImageActivity extends AppCompatActivity implements View.OnClickList
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image);
 
+        // get data from previous activity
         Bundle extras = getIntent().getExtras();
         if (extras != null){
             foldername = extras.getString("foldername");
         }
 
+        // open folder of trip
         imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
         files = imagesFolder.listFiles();
 
+        // key to easier image viewing
         mCustomPagerAdapter = new CustomPagerAdapter(this, foldername);
 
         mViewPager = (ViewPager) findViewById(R.id.pager);
@@ -68,6 +71,8 @@ public class ImageActivity extends AppCompatActivity implements View.OnClickList
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
+                        // on deletion of photo, exit activity
+                        // simplest way to avoid nullpointerexception, which caused app to crash
                         int index = mViewPager.getCurrentItem();
                         File currfile = files[index];
                         deleteRecursive(currfile);
@@ -98,6 +103,8 @@ public class ImageActivity extends AppCompatActivity implements View.OnClickList
         callBroadCast(dir);
     }
 
+    // function to rescan the folder after deletion
+    // keeps app up-to-date with whether or not a given file exists in the public directory
     private void callBroadCast(String dir) {
         MediaScannerConnection.scanFile(this, new String[]{dir}, null, new MediaScannerConnection.OnScanCompletedListener() {
             @Override
@@ -119,6 +126,7 @@ public class ImageActivity extends AppCompatActivity implements View.OnClickList
     }
 }
 
+// tutorials exist on online to better understand how this feature works
 class CustomPagerAdapter extends PagerAdapter{
 
     private LayoutInflater mLayoutInflater;

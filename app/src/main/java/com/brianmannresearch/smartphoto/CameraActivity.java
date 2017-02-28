@@ -64,22 +64,27 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
+        // check if location is enabled
+        // if not, create an alert dialog
         if (!isLocationEnabled(this)) {
             showSettingsAlert();
         }
 
+        // collect data passed from previous activity
         Bundle extras = getIntent().getExtras();
         if (extras != null){
             foldername = extras.getString("folder");
             mode = extras.getString("mode");
         }
 
+        // check if this is a new trip or a previous trip
         assert foldername != null;
         imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
         if (mode.matches("new")) {
             imagesFolder.mkdir();
         }
 
+        // create necessary elements for the layout
         builder = new StringBuilder();
         selectedImage = (ImageView) findViewById(R.id.selectedImage);
         bCamera = (Button) findViewById(R.id.bCamera);
@@ -127,14 +132,17 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == TAKE_PICTURE && resultCode == RESULT_OK) {
+            // set imageview to latest picture
             chosenImage = (Bitmap) data.getExtras().get("data");
             selectedImage.setImageBitmap(chosenImage);
 
             filename = getOriginalImagePath();
             filepath = filename.split("/");
 
+            // call function that handles embedding metadata into the image
             ReadExif(filename);
 
+            // copy the image to the trip folder
             File sourceFile = new File(filename);
             final File destFile = new File(imagesFolder, filepath[filepath.length - 1]);
             try {
@@ -161,6 +169,8 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
         try{
             ExifInterface exifInterface = new ExifInterface(file);
 
+            // check if the image already has GPS metadata
+            // if not, get current location and embed it into the image
             if (!exifInterface.getLatLong(latlong)) {
                 double latitude = mCurrentLocation.getLatitude();
                 double longitude = mCurrentLocation.getLongitude();
@@ -174,6 +184,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
                 exifInterface.saveAttributes();
             }
 
+            // generate the string to add the to the layout
             builder = new StringBuilder();
             builder.append("Filename: ").append(filepath[filepath.length-1]).append("\n");
             builder.append("Date & Time: ").append(exifInterface.getAttribute(ExifInterface.TAG_DATETIME)).append("\n");
@@ -187,6 +198,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
         }
     }
 
+    // function to convert from deg/min/sec into degrees
     private String getGeoCoordinates(String loc){
         String[] degMinSec = loc.split(",");
         String[] deg = degMinSec[0].split("/");
@@ -205,6 +217,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
         return String.valueOf(degrees);
     }
 
+    // convert string location of deg/min/sec into a double
     private String convertLocation(double location){
         location=Math.abs(location);
         int degree = (int) location;

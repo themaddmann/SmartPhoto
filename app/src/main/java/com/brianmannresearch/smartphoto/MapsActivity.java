@@ -53,9 +53,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        // open folder to collect all of the photos
         File imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
         File[] files = imagesFolder.listFiles();
         ExifInterface exif;
+        // collect the GPS coordinates of each photo and add them to the map as pins
+        // set the pins icon to the actual (scaled) image itself
         for (int j = 0; j < files.length; j++) {
             try {
                 exif = new ExifInterface(files[j].getAbsolutePath());
@@ -97,12 +100,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    // correctly orients the bitmap of the image
     private static Bitmap rotateBitmap(Bitmap bitmap, int degrees){
         Matrix matrix = new Matrix();
         matrix.postRotate(degrees);
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
     }
 
+    // converts the string of gps coordinates from deg/min/sec to degrees
     private String getGeoCoordinates(String loc){
         String[] degMinSec = loc.split(",");
         String[] deg = degMinSec[0].split("/");

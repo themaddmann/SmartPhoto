@@ -41,13 +41,16 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gallery);
 
+        // get data from previous activity
         Bundle extras = getIntent().getExtras();
         if (extras != null){
             foldername = extras.getString("foldername");
         }
 
+        // this needs to be changed to apollo server at some point
         upLoadServerUrl = "http://ndssl.000webhostapp.com/photos/uploadphoto.php";
 
+        // setup buttons for layout
         returnButton = (Button) findViewById(R.id.returnButton);
         mapButton = (Button) findViewById(R.id.mapButton);
         uploadButton = (Button) findViewById(R.id.bUpload);
@@ -62,17 +65,22 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
         resumeButton.setOnClickListener(this);
         imagesButton.setOnClickListener(this);
 
+        // open folder and check if any images are in the trip
+        // if not, show alert message
         imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
         if (imagesFolder.listFiles().length == 0) {
             isempty = true;
             showEmptyAlert();
         }
 
+        // check size of trip
         String sb = foldername + '\n' +
                 "Number of photos in this trip: " + imagesFolder.listFiles().length;
         tripinfo.setText(sb);
     }
 
+    // upload function
+    // plenty of tutorials online should changes need to be made to this function
     private int uploadPhoto(String sourceFileUri) {
         HttpURLConnection conn;
         DataOutputStream dos;

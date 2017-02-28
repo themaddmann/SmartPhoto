@@ -61,6 +61,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // check if location services are enabled
+        // if not, show an alert dialog
         if (!isLocationEnabled(this)) {
             showSettingsAlert();
         }
@@ -71,16 +73,22 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST);
         }
 
+        // check if application has permission to write to external storage
+        // if not, request permission
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITE_STORAGE_REQUEST);
         }
 
+        // check if application has permission to read from external storage
+        // if not, request permission
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, READ_STORAGE_REQUEST);
             }
         }
 
+        // check if application has permission to use the camera
+        // if not, request permission
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
         }
@@ -88,14 +96,17 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         // get the username
         showUsernameAlert();
 
+        // generate the buttons for the layout
         startButton = (Button) findViewById(R.id.startButton);
         exitButton = (Button) findViewById(R.id.exitButton);
         deleteButton = (Button) findViewById(R.id.deleteButton);
 
+        // setup how to handle button clicks
         startButton.setOnClickListener(this);
         exitButton.setOnClickListener(this);
         deleteButton.setOnClickListener(this);
 
+        // create googleapi request
         if (mGoogleApiClient == null){
             mGoogleApiClient = new GoogleApiClient.Builder(this)
                     .addConnectionCallbacks(this)
@@ -105,8 +116,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
         createLocationRequest();
 
+        // create layout that displays previous trips
         linearLayout = (LinearLayout) findViewById(R.id.history_linear);
 
+        // check for previous trips in public directory
         directory = new File(String.valueOf(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
         folders = directory.listFiles();
         int size = folders.length;
@@ -116,6 +129,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         temp = new TextView(this);
         temp.setText(textview);
         int i = 0;
+        // loop through each file found in the public directory
+        // if it's a trip, add it to the list to be displayed
         for (File file : folders) {
             if (file.toString().matches("\\S*Trip_\\d*")) {
                 temp = new TextView(this);
@@ -187,6 +202,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         tripnumber++;
                     }
                 }
+                // must pass variables from this activity to camera activity
                 String foldername = username+ "_Trip_" + tripnumber;
                 Intent cameraIntent = new Intent(MainActivity.this, CameraActivity.class);
                 cameraIntent.putExtra("folder", foldername);
@@ -200,9 +216,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 showDeleteAlert();
                 break;
             default:
+                // this default case handles when the user clicks a trip name
                 TextView textView = (TextView) findViewById(view.getId());
                 Filename = textView.getText().toString();
                 imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), Filename);
+                // check if the trip is empty or if it is being incorrectly displayed
                 if (imagesFolder.listFiles().length == 0 || !imagesFolder.exists()){
                     showEmptyAlert();
                 }else{
@@ -226,6 +244,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         for (TextView textView : tv){
                             linearLayout.removeView(textView);
                         }
+                        // check through public directory to update list of existing trips
                         directory = new File(String.valueOf(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
                         folders = directory.listFiles();
                         int size = folders.length;
@@ -299,9 +318,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                             showExistsAlert();
                         } else {
                             deleteRecursive(tripfolder);
+                            // clear the layout that contains each trip on the device
                             for (TextView textView : tv){
                                 linearLayout.removeView(textView);
                             }
+                            // update the layout to properly display existing trips
                             directory = new File(String.valueOf(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)));
                             folders = directory.listFiles();
                             int size = folders.length;
