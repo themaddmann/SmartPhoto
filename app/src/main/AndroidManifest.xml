@@ -44,7 +44,9 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.brianmannresearch.smartphoto.MainActivity" />
         </activity>
-        <activity android:name=".ImageActivity"></activity>
+        <activity
+            android:name=".ImageActivity">
+        </activity>
     </application>
 
 </manifest>

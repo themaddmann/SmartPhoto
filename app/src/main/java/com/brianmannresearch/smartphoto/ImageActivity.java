@@ -57,6 +57,7 @@ public class ImageActivity extends AppCompatActivity implements View.OnClickList
 
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mCustomPagerAdapter);
+        mViewPager.setOffscreenPageLimit(2);
         deleteButton = (Button) findViewById(R.id.deleteButton);
 
         deleteButton.setOnClickListener(this);
@@ -171,7 +172,11 @@ class CustomPagerAdapter extends PagerAdapter{
                     "GPS Longitude: " + getGeoCoordinates(exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE)) + " " + exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF);
             ExifData.setText(builder);
             int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-            bitmap = BitmapFactory.decodeFile(files[position].getAbsolutePath());
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inJustDecodeBounds = false;
+            opts.inPreferredConfig = Bitmap.Config.RGB_565;
+            opts.inDither = true;
+            bitmap = BitmapFactory.decodeFile(files[position].getAbsolutePath(), opts);
             switch (orientation){
                 case ExifInterface.ORIENTATION_ROTATE_90:
                     bitmap = rotateBitmap(bitmap, 90);
