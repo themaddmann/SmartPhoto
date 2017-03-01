@@ -202,8 +202,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         tripnumber++;
                     }
                 }
-                // must pass variables from this activity to camera activity
+                // check to see if trip is properly numbered
                 String foldername = username+ "_Trip_" + tripnumber;
+                imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
+                while (imagesFolder.exists()){
+                    tripnumber++;
+                    foldername = username+ "_Trip_" + tripnumber;
+                    imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
+                }
+                // must pass variables from this activity to camera activity
                 Intent cameraIntent = new Intent(MainActivity.this, CameraActivity.class);
                 cameraIntent.putExtra("folder", foldername);
                 cameraIntent.putExtra("mode", "new");
