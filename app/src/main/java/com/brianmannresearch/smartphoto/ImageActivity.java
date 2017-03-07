@@ -57,7 +57,6 @@ public class ImageActivity extends AppCompatActivity implements View.OnClickList
 
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mCustomPagerAdapter);
-        mViewPager.setOffscreenPageLimit(2);
         deleteButton = (Button) findViewById(R.id.deleteButton);
 
         deleteButton.setOnClickListener(this);
