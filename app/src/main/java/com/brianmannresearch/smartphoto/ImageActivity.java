@@ -145,6 +145,33 @@ class CustomPagerAdapter extends PagerAdapter{
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
     }
 
+    private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight){
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+
+        if (height>reqHeight || width > reqWidth){
+            final int halfHeight = height/2;
+            final int halfWidth = width/2;
+
+            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth){
+                inSampleSize *= 2;
+            }
+        }
+        return inSampleSize;
+    }
+
+    private static Bitmap decodeSampledBitmapFromFile(String filename, int reqWidth, int reqHeight){
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(filename, options);
+
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+
+        options.inJustDecodeBounds = false;
+        return BitmapFactory.decodeFile(filename, options);
+    }
+
     @Override
     public int getCount() {
         return files.length;
@@ -171,7 +198,7 @@ class CustomPagerAdapter extends PagerAdapter{
                     "GPS Longitude: " + getGeoCoordinates(exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE)) + " " + exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF);
             ExifData.setText(builder);
             int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-            bitmap = BitmapFactory.decodeFile(files[position].getAbsolutePath());
+            bitmap = decodeSampledBitmapFromFile(files[position].getAbsolutePath(), 100, 100);
             switch (orientation){
                 case ExifInterface.ORIENTATION_ROTATE_90:
                     bitmap = rotateBitmap(bitmap, 90);
