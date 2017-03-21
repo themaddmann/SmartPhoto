@@ -146,7 +146,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
             File sourceFile = new File(filename);
             final File destFile = new File(imagesFolder, filepath[filepath.length - 1]);
             try {
-                copyFile(sourceFile, destFile);
+                moveFile(sourceFile, destFile);
                 scanFile(destFile.getAbsolutePath());
             } catch (IOException ex) {
                 Toast.makeText(CameraActivity.this, ex.toString(), Toast.LENGTH_LONG).show();
@@ -271,13 +271,15 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
         showFinishAlert();
     }
 
-    private void copyFile(File sourceFile, File destFile) throws IOException{
+    private void moveFile(File sourceFile, File destFile) throws IOException{
         FileChannel source;
         FileChannel destination;
         source = new FileInputStream(sourceFile).getChannel();
         destination = new FileOutputStream(destFile).getChannel();
         if (source != null){
             destination.transferFrom(source, 0, source.size());
+            sourceFile.delete();
+            scanFile(sourceFile.getAbsolutePath());
         }
         if (source != null){
             source.close();

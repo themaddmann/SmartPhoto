@@ -171,11 +171,7 @@ class CustomPagerAdapter extends PagerAdapter{
                     "GPS Longitude: " + getGeoCoordinates(exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE)) + " " + exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF);
             ExifData.setText(builder);
             int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-            BitmapFactory.Options opts = new BitmapFactory.Options();
-            opts.inJustDecodeBounds = false;
-            opts.inPreferredConfig = Bitmap.Config.RGB_565;
-            opts.inDither = true;
-            bitmap = BitmapFactory.decodeFile(files[position].getAbsolutePath(), opts);
+            bitmap = BitmapFactory.decodeFile(files[position].getAbsolutePath());
             switch (orientation){
                 case ExifInterface.ORIENTATION_ROTATE_90:
                     bitmap = rotateBitmap(bitmap, 90);

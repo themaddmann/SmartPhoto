@@ -140,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 textview = split[index-1];
                 temp.setText(textview);
                 temp.setTextColor(Color.BLUE);
-                temp.setTextSize(24);
+                temp.setTextSize(20);
                 temp.setClickable(true);
                 temp.setOnClickListener(this);
                 linearLayout.addView(temp);
@@ -271,7 +271,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                                 textview = split[index-1];
                                 temp.setText(textview);
                                 temp.setTextColor(Color.BLUE);
-                                temp.setTextSize(24);
+                                temp.setTextSize(20);
                                 temp.setClickable(true);
                                 temp.setOnClickListener(MainActivity.this);
                                 linearLayout.addView(temp);
@@ -350,7 +350,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                                     textview = split[index-1];
                                     temp.setText(textview);
                                     temp.setTextColor(Color.BLUE);
-                                    temp.setTextSize(24);
+                                    temp.setTextSize(20);
                                     temp.setClickable(true);
                                     temp.setOnClickListener(MainActivity.this);
                                     linearLayout.addView(temp);
@@ -463,7 +463,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                     textview = split[index-1];
                     temp.setText(textview);
                     temp.setTextColor(Color.BLUE);
-                    temp.setTextSize(24);
+                    temp.setTextSize(20);
                     temp.setClickable(true);
                     temp.setOnClickListener(this);
                     linearLayout.addView(temp);
@@ -493,7 +493,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                     textview = split[index-1];
                     temp.setText(textview);
                     temp.setTextColor(Color.BLUE);
-                    temp.setTextSize(24);
+                    temp.setTextSize(20);
                     temp.setClickable(true);
                     temp.setOnClickListener(this);
                     linearLayout.addView(temp);
