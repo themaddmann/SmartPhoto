@@ -24,13 +24,23 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -42,16 +52,19 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     private static final int CAMERA_INTENT = 1, LOCATION_REQUEST = 2, WRITE_STORAGE_REQUEST = 4, READ_STORAGE_REQUEST = 5, CAMERA_REQUEST = 6, GALLERY = 7;
     private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 1000;
+    private static final String usernames = "saved_users.txt";
 
     private Button startButton, exitButton, deleteButton;
     private LinearLayout linearLayout;
     private TextView[] tv;
     private String username, Filename;
     private String[] filename;
+    private List<String> users = new ArrayList<>();
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private Location mCurrentLocation;
     private File tripfolder, directory, imagesFolder;
+    private FileOutputStream fos, afos;
     private File[] folders;
 
     private int tripnumber;
@@ -91,6 +104,28 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         // if not, request permission
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
+        }
+
+        // try to open file containing existing usernames
+        try{
+            FileInputStream fis = openFileInput(usernames);
+            InputStreamReader isr = new InputStreamReader(fis);
+            BufferedReader bufferedReader = new BufferedReader(isr);
+            String line;
+            users.add("");
+            while ((line = bufferedReader.readLine()) != null){
+                users.add(line);
+            }
+            fis.close();
+            afos = openFileOutput(usernames, Context.MODE_APPEND);
+        // otherwise create the file
+        }catch (Exception e){
+            try {
+                fos = openFileOutput(usernames, Context.MODE_PRIVATE);
+            }catch (Exception er){
+                er.printStackTrace();
+            }
+            e.printStackTrace();
         }
 
         // get the username
@@ -162,9 +197,28 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         LayoutInflater inflater = this.getLayoutInflater();
 
+        View myView = inflater.inflate(R.layout.text_dialog, null);
+
+        Spinner spinner = (Spinner) myView.findViewById(R.id.usernamespinner);
+        final EditText editText = (EditText) myView.findViewById(R.id.text);
+        final ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, users);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int pos, long id) {
+                editText.setText(adapterView.getItemAtPosition(pos).toString());
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+
         alertDialog.setMessage("Please enter a username:")
                 .setCancelable(false)
-                .setView(inflater.inflate(R.layout.text_dialog, null))
+                .setView(myView)
                 .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
@@ -176,6 +230,32 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                             Toast.makeText(MainActivity.this, "Please enter a username", Toast.LENGTH_LONG).show();
                         }else {
                             username = input;
+                            if (fos != null){
+                                try {
+                                    fos.write((username+"\n").getBytes());
+                                    fos.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }else if (afos != null){
+                                try {
+                                    Boolean match = false;
+                                    for (String user : users){
+                                        if (username.matches(user)){
+                                            match = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!match) {
+                                        afos.write((username+"\n").getBytes());
+                                        afos.close();
+                                    }
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }else{
+                                Toast.makeText(MainActivity.this, "Username not stored", Toast.LENGTH_LONG).show();
+                            }
                         }
                     }
                 })

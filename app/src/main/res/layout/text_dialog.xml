@@ -11,4 +11,9 @@
         android:layout_height="wrap_content"
         android:inputType="text"/>
 
+    <Spinner
+        android:id="@+id/usernamespinner"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" />
+
 </LinearLayout>
