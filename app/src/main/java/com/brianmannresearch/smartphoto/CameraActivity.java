@@ -94,6 +94,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
         bCamera.setOnClickListener(this);
         endButton.setOnClickListener(this);
 
+        // googleapi request
         if (mGoogleApiClient == null){
             mGoogleApiClient = new GoogleApiClient.Builder(this)
                     .addConnectionCallbacks(this)
@@ -116,6 +117,8 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.bCamera:
+                // check if location services are enabled
+                // if not, require the user to enable them before opening the camera
                 if (!isLocationEnabled(this)) {
                     showSettingsAlert();
                 }
@@ -142,7 +145,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
             // call function that handles embedding metadata into the image
             ReadExif(filename);
 
-            // copy the image to the trip folder
+            // move the image to the trip folder
             File sourceFile = new File(filename);
             final File destFile = new File(imagesFolder, filepath[filepath.length - 1]);
             try {
@@ -236,6 +239,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
                 "/1000,";
     }
 
+    // ask user if they want to finish current trip
     private void showFinishAlert(){
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
 
@@ -266,11 +270,13 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
                 mGoogleApiClient, mLocationRequest, this);
     }
 
+    // when the user hits the back button, ask if they want to exit the app
     @Override
     public void onBackPressed(){
         showFinishAlert();
     }
 
+    // function that moves the newly created photo file from the standard photo directory to the specific trip directory
     private void moveFile(File sourceFile, File destFile) throws IOException{
         FileChannel source;
         FileChannel destination;
@@ -287,6 +293,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
         destination.close();
     }
 
+    // run the media scanner
     private void scanFile(String path){
         MediaScannerConnection.scanFile(CameraActivity.this, new String[] { path }, null,
                 new MediaScannerConnection.OnScanCompletedListener(){
@@ -295,6 +302,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
                 });
     }
 
+    // check if location services are enabled
     private static boolean isLocationEnabled(Context context){
         int locationMode;
         String locationProviders;
@@ -314,6 +322,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
         }
     }
 
+    // prompt user to turn on location services
     private void showSettingsAlert(){
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
 
@@ -335,6 +344,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
         alert.show();
     }
 
+    // remaining functions are all needed for location services
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         if (mCurrentLocation == null){

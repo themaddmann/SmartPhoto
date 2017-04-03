@@ -69,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     private int tripnumber;
 
+    // function that is called once the application is launched
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -193,6 +194,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
     }
 
+    // function that allows user to specify username
     private void showUsernameAlert(){
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         LayoutInflater inflater = this.getLayoutInflater();
@@ -225,11 +227,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         Dialog f = (Dialog) dialogInterface;
                         EditText text = (EditText) f.findViewById(R.id.text);
                         String input = text.getText().toString();
+                        // check if username field is blank
                         if (input.matches("")){
                             showUsernameAlert();
                             Toast.makeText(MainActivity.this, "Please enter a username", Toast.LENGTH_LONG).show();
                         }else {
                             username = input;
+                            // check if this is first time the application has been run and write to the empty username file
                             if (fos != null){
                                 try {
                                     fos.write((username+"\n").getBytes());
@@ -237,6 +241,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
+                             // otherwise, append to the existing file
                             }else if (afos != null){
                                 try {
                                     Boolean match = false;
@@ -246,6 +251,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                                             break;
                                         }
                                     }
+                                    // if it is a new username, add it to the list
+                                    // otherwise, do not
                                     if (!match) {
                                         afos.write((username+"\n").getBytes());
                                         afos.close();
@@ -270,6 +277,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         alert.show();
     }
 
+    // function that handles all click events, specifically buttons or previous trips
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
@@ -321,6 +329,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
+    // if a trip is empty or doesn't exist, run this function
+    // this function basically resets the list of existing trips being displayed
     private void showEmptyAlert(){
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         alertDialog.setMessage("This trip is empty!")
@@ -370,11 +380,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 mGoogleApiClient, mLocationRequest, this);
     }
 
+    // when the user hits the back button, ask if they want to exit the app
     @Override
     public void onBackPressed(){
-
+        showFinishAlert();
     }
 
+    // prompt user if they want to exit the app
     private void showFinishAlert(){
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
 
@@ -451,6 +463,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         alert.show();
     }
 
+    // function that requires the user to type out, in full, the trip they want to delete
     private void showDeleteAlert(){
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         final LayoutInflater inflater = this.getLayoutInflater();
@@ -482,7 +495,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         alert.show();
     }
 
-
+    // function that recursively deletes the files in a directory
     private void deleteRecursive(File fileOrDirectory) {
         if (fileOrDirectory.isDirectory())
             for (File child : fileOrDirectory.listFiles())
@@ -493,6 +506,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         callBroadCast(dir);
     }
 
+    // function that forces the device to check for the existence of a given file path
+    // has been problematic on older devices
     private void callBroadCast(String dir) {
         MediaScannerConnection.scanFile(this, new String[]{dir}, null, new MediaScannerConnection.OnScanCompletedListener() {
             @Override
@@ -504,6 +519,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         });
     }
 
+    // alert the user that selected trip does not actually exist on the phone
+    // occasionally happens when a trip is deleted but still is detected by the mediascanner
     private void showExistsAlert(){
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         alertDialog.setMessage("This trip does not exist!")
@@ -518,10 +535,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         alert.show();
     }
 
+    // function that is called when the app returns to the main activity from another one
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        // if returning from CameraActivity
         if (requestCode == CAMERA_INTENT && resultCode == RESULT_OK) {
+            // reset the list of trips to include the one that was just created
             for (TextView textView : tv){
                 linearLayout.removeView(textView);
             }
@@ -551,7 +571,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                     i++;
                 }
             }
+         // if returning from GalleryActivity
         }else if (requestCode == GALLERY && resultCode == RESULT_OK){
+            // reset the list of trips in case the selected one had all contents deleted
             for (TextView textView : tv){
                 linearLayout.removeView(textView);
             }
@@ -584,6 +606,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
+    // checks if device has GPS services enabled
     private static boolean isLocationEnabled(Context context){
         int locationMode;
         String locationProviders;
@@ -603,6 +626,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
+    // function that prompts user to turn on location
     private void showSettingsAlert(){
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
 
@@ -624,6 +648,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         alert.show();
     }
 
+    // remaining functions are all needed for location services
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         if (mCurrentLocation == null){

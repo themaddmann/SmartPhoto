@@ -47,7 +47,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
             foldername = extras.getString("foldername");
         }
 
-        // this needs to be changed to apollo server at some point
+        // TODO: this needs to be changed to apollo server at some point
         upLoadServerUrl = "http://ndssl.000webhostapp.com/photos/uploadphoto.php";
 
         // setup buttons for layout
@@ -196,6 +196,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
+    // alert the user that no photos exist in this trip
     private void showEmptyAlert(){
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         alertDialog.setMessage("This trip is empty!")
@@ -213,6 +214,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
     @Override
     public void onClick(View view) {
         switch (view.getId()){
+            // launch image activity
             case R.id.viewImagesButton:
                 if (!isempty) {
                     Intent imagesIntent = new Intent(GalleryActivity.this, ImageActivity.class);
@@ -220,12 +222,14 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                     startActivityForResult(imagesIntent, VIEW_INTENT);
                 }
                 break;
+            // continue current trip
             case R.id.continueButton:
                 Intent cameraIntent = new Intent(GalleryActivity.this, CameraActivity.class);
                 cameraIntent.putExtra("folder", foldername);
                 cameraIntent.putExtra("mode", "continue");
                 startActivityForResult(cameraIntent, CAMERA_INTENT);
                 break;
+            // return to main activity
             case R.id.returnButton:
                 Intent data = new Intent();
                 String text = "Finished";
@@ -233,6 +237,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 setResult(RESULT_OK, data);
                 finish();
                 break;
+            // launch map activity
             case R.id.mapButton:
                 if (!isempty) {
                     Intent mapsIntent = new Intent(GalleryActivity.this, MapsActivity.class);
@@ -240,6 +245,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                     startActivity(mapsIntent);
                 }
                 break;
+            // upload photos to server if applicable
             case R.id.bUpload:
                 if(isempty) {
                     Toast.makeText(GalleryActivity.this, "Please add some photos to this trip before uploading", Toast.LENGTH_LONG).show();

@@ -139,12 +139,14 @@ class CustomPagerAdapter extends PagerAdapter{
         files = imagesFolder.listFiles();
     }
 
+    // corrects the orientation of the photo so that it is properly displayed
     private static Bitmap rotateBitmap(Bitmap bitmap, int degrees){
         Matrix matrix = new Matrix();
         matrix.postRotate(degrees);
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
     }
 
+    // important function that helps prevent memory errors when loading bitmaps
     private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight){
         final int height = options.outHeight;
         final int width = options.outWidth;
@@ -161,6 +163,7 @@ class CustomPagerAdapter extends PagerAdapter{
         return inSampleSize;
     }
 
+    // important function that helps prevent memory errors when loading bitmaps
     private static Bitmap decodeSampledBitmapFromFile(String filename, int reqWidth, int reqHeight){
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
@@ -182,6 +185,8 @@ class CustomPagerAdapter extends PagerAdapter{
         return view == object;
     }
 
+    // lookup CustomPageAdapter tutorials to better understand this function
+    // very basically, it prepares the pages it needs to by loading the image and other info relevant to the image
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
         View itemView = mLayoutInflater.inflate(R.layout.pager_item, container, false);

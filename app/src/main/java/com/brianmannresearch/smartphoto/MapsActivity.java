@@ -29,6 +29,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
+        // get foldername from previous activity
         Bundle extras = getIntent().getExtras();
         if (extras != null){
             foldername = extras.getString("foldername");
