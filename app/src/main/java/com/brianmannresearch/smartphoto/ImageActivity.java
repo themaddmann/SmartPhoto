@@ -36,11 +36,14 @@ public class ImageActivity extends AppCompatActivity implements View.OnClickList
     private Button deleteButton;
     private File imagesFolder;
     private File[] files;
+    private Intent starterIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image);
+
+        starterIntent = getIntent();
 
         // get data from previous activity
         Bundle extras = getIntent().getExtras();
@@ -52,6 +55,15 @@ public class ImageActivity extends AppCompatActivity implements View.OnClickList
         imagesFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), foldername);
         files = imagesFolder.listFiles();
 
+        if (files.length == 0){
+            showEmptyAlert();
+            Intent data = new Intent();
+            String text = "Finished";
+            data.setData(Uri.parse(text));
+            setResult(RESULT_OK, data);
+            finish();
+        }
+
         // key to easier image viewing
         mCustomPagerAdapter = new CustomPagerAdapter(this, foldername);
 
@@ -60,6 +72,21 @@ public class ImageActivity extends AppCompatActivity implements View.OnClickList
         deleteButton = (Button) findViewById(R.id.deleteButton);
 
         deleteButton.setOnClickListener(this);
+    }
+
+    // alert the user that no photos exist in this trip
+    private void showEmptyAlert(){
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+        alertDialog.setMessage("This trip is empty!")
+                .setCancelable(false)
+                .setNegativeButton("Ok", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                    }
+                });
+        final AlertDialog alert = alertDialog.create();
+        alert.show();
     }
 
     private void showDeleteAlert() {
@@ -76,11 +103,8 @@ public class ImageActivity extends AppCompatActivity implements View.OnClickList
                         int index = mViewPager.getCurrentItem();
                         File currfile = files[index];
                         deleteRecursive(currfile);
-                        Intent data = new Intent();
-                        String text = "Finished";
-                        data.setData(Uri.parse(text));
-                        setResult(RESULT_OK, data);
                         finish();
+                        startActivity(starterIntent);
                     }
                 })
                 .setNegativeButton("No", new DialogInterface.OnClickListener() {
@@ -123,6 +147,16 @@ public class ImageActivity extends AppCompatActivity implements View.OnClickList
                 showDeleteAlert();
                 break;
         }
+    }
+
+    // when the user hits the back button, ask if they want to exit the app
+    @Override
+    public void onBackPressed(){
+        Intent data = new Intent();
+        String text = "Finished";
+        data.setData(Uri.parse(text));
+        setResult(RESULT_OK, data);
+        finish();
     }
 }
 

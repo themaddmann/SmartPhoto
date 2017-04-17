@@ -21,6 +21,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -44,16 +45,17 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
     private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 1000;
 
     private ImageView selectedImage;
-    private Button bCamera, endButton;
+    private Button bCamera, endButton, deleteButton;
     private TextView exifData;
     private String filename;
     private Bitmap chosenImage;
     private String foldername, mode;
     private String[] filepath;
-    private File imagesFolder;
+    private File imagesFolder, finalFile;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private Location mCurrentLocation;
+    private Intent starterIntent;
 
     StringBuilder builder;
 
@@ -69,6 +71,8 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
         if (!isLocationEnabled(this)) {
             showSettingsAlert();
         }
+
+        starterIntent = getIntent();
 
         // collect data passed from previous activity
         Bundle extras = getIntent().getExtras();
@@ -88,11 +92,13 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
         builder = new StringBuilder();
         selectedImage = (ImageView) findViewById(R.id.selectedImage);
         bCamera = (Button) findViewById(R.id.bCamera);
+        deleteButton = (Button) findViewById(R.id.deleteButton);
         endButton = (Button) findViewById(R.id.endButton);
         exifData = (TextView) findViewById(R.id.ExifData);
 
         bCamera.setOnClickListener(this);
         endButton.setOnClickListener(this);
+        deleteButton.setOnClickListener(this);
 
         // googleapi request
         if (mGoogleApiClient == null){
@@ -121,14 +127,69 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
                 // if not, require the user to enable them before opening the camera
                 if (!isLocationEnabled(this)) {
                     showSettingsAlert();
+                }else {
+                    Intent photoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    startActivityForResult(photoIntent, TAKE_PICTURE);
                 }
-                Intent photoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                startActivityForResult(photoIntent, TAKE_PICTURE);
+                break;
+            case R.id.deleteButton:
+                if (finalFile == null){
+                    Toast.makeText(CameraActivity.this, "No photo to be deleted", Toast.LENGTH_LONG).show();
+                }else {
+                    showDeleteAlert();
+                }
                 break;
             case R.id.endButton:
                 showFinishAlert();
                 break;
         }
+    }
+
+    private void showDeleteAlert() {
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+
+        alertDialog.setTitle("Delete");
+        alertDialog.setMessage("Are you sure you want to delete this photo?")
+                .setCancelable(false)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        deleteRecursive(finalFile);
+                        finish();
+                        startActivity(starterIntent);
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // do nothing
+                    }
+                });
+        final AlertDialog alert = alertDialog.create();
+        alert.show();
+    }
+
+    private void deleteRecursive(File fileOrDirectory) {
+        if (fileOrDirectory.isDirectory())
+            for (File child : fileOrDirectory.listFiles())
+                deleteRecursive(child);
+
+        String dir = fileOrDirectory.getAbsolutePath();
+        fileOrDirectory.delete();
+        callBroadCast(dir);
+    }
+
+    // function to rescan the folder after deletion
+    // keeps app up-to-date with whether or not a given file exists in the public directory
+    private void callBroadCast(String dir) {
+        MediaScannerConnection.scanFile(this, new String[]{dir}, null, new MediaScannerConnection.OnScanCompletedListener() {
+            @Override
+            public void onScanCompleted(String path, Uri uri) {
+                Toast.makeText(CameraActivity.this, "Scanned", Toast.LENGTH_LONG).show();
+                Log.e("ExternalStorage", "Scanned " + path + ":");
+                Log.e("ExternalStorage", "-> uri=" + uri);
+            }
+        });
     }
 
     @Override
@@ -148,6 +209,7 @@ public class CameraActivity extends AppCompatActivity implements GoogleApiClient
             // move the image to the trip folder
             File sourceFile = new File(filename);
             final File destFile = new File(imagesFolder, filepath[filepath.length - 1]);
+            finalFile = destFile;
             try {
                 moveFile(sourceFile, destFile);
                 scanFile(destFile.getAbsolutePath());
