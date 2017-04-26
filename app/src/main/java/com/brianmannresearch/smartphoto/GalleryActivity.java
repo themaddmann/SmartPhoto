@@ -1,6 +1,5 @@
 package com.brianmannresearch.smartphoto;
 
-import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 
@@ -9,18 +8,15 @@ import android.os.Environment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.DataOutputStream;
+import net.gotev.uploadservice.MultipartUploadRequest;
+
 import java.io.File;
-import java.io.FileInputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.util.UUID;
 
 public class GalleryActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -29,12 +25,10 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
     private File imagesFolder;
     private Button returnButton, mapButton, uploadButton, resumeButton, imagesButton;
     private TextView tripinfo;
-    private ProgressDialog dialog = null;
 
     private File[] files;
     private String foldername, upLoadServerUrl;
     private Boolean isempty = false;
-    private int serverResponseCode = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,8 +41,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
             foldername = extras.getString("foldername");
         }
 
-        // TODO: this needs to be changed to apollo server at some point
-        upLoadServerUrl = "http://ndssl.000webhostapp.com/photos/uploadphoto.php";
+        upLoadServerUrl = "http://sslab.nd.edu/photos/upload.php";
 
         // setup buttons for layout
         returnButton = (Button) findViewById(R.id.returnButton);
@@ -80,119 +73,21 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
     }
 
     // upload function
-    // plenty of tutorials online should changes need to be made to this function
-    private int uploadPhoto(String sourceFileUri) {
-        HttpURLConnection conn;
-        DataOutputStream dos;
-        String boundary = "*****";
-        int bytesRead, bytesAvailable, bufferSize;
-        byte[] buffer;
-        int maxBufferSize = 1024 * 1024;
-        File sourceFile = new File(sourceFileUri);
+    private void uploadMultipart(String uploadname){
 
-        if (!sourceFile.isFile()) {
-            dialog.dismiss();
+        String [] split = uploadname.split("/");
+        String name = split[split.length-1];
 
-            Log.e("uploadFile", "Source File does not exist: " + sourceFileUri);
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(GalleryActivity.this, "File does not exist", Toast.LENGTH_LONG).show();
-                }
-            });
-            return 0;
-        } else {
-            try {
-                // open a URL connection to the server
-                FileInputStream fileInputStream = new FileInputStream(sourceFile);
-                URL url = new URL(upLoadServerUrl);
+        try{
+            String uploadId = UUID.randomUUID().toString();
 
-                // open a HTTP connection to the URL
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setDoInput(true); // allow inputs
-                conn.setDoOutput(true); // allow outputs
-                conn.setUseCaches(false); // prevent a cached copy
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Connection", "Keep-Alive");
-                conn.setRequestProperty("ENCTYPE", "multipart/form-data");
-                conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
-                conn.setRequestProperty("uploaded_file", sourceFileUri);
-
-                dos = new DataOutputStream(conn.getOutputStream());
-
-                dos.writeBytes("--" + boundary + "\r\n");
-                dos.writeBytes("Content-Disposition: form-data; name=foldername;id=" + foldername + "\r\n");
-                dos.writeBytes("\r\n");
-
-                dos.writeBytes(foldername);
-                dos.writeBytes("\r\n");
-                dos.writeBytes("--" + boundary + "\r\n");
-
-                dos.writeBytes("--" + boundary + "\r\n");
-                dos.writeBytes("Content-Disposition: form-data; name=uploaded_file;filename=" + sourceFileUri + "\r\n");
-                dos.writeBytes("\r\n");
-
-                // create a buffer of max size
-                bytesAvailable = fileInputStream.available();
-
-                bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                buffer = new byte[bufferSize];
-
-                // read file and write it into form
-                bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-
-                while (bytesRead > 0) {
-                    dos.write(buffer, 0, bufferSize);
-                    bytesAvailable = fileInputStream.available();
-                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-                }
-
-                // send multipart form data
-                dos.writeBytes("\r\n");
-                dos.writeBytes("--" + boundary + "--\r\n");
-
-                // responses from the server
-                serverResponseCode = conn.getResponseCode();
-                String serverResponseMessage = conn.getResponseMessage();
-                Log.i("uploadFile", "HTTP Response is: " + serverResponseMessage + ": " + serverResponseCode);
-
-                if (serverResponseCode == 200) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {Toast.makeText(GalleryActivity.this, "Upload complete...", Toast.LENGTH_LONG).show();}
-                    });
-                }
-
-                // close the streams
-                fileInputStream.close();
-                dos.flush();
-                dos.close();
-            } catch (MalformedURLException ex) {
-                dialog.dismiss();
-                ex.printStackTrace();
-
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(GalleryActivity.this, "Malformed URL", Toast.LENGTH_LONG).show();
-                    }
-                });
-                Log.e("Upload file to server", "error: " + ex.getMessage(), ex);
-            } catch (Exception e) {
-                dialog.dismiss();
-                e.printStackTrace();
-
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(GalleryActivity.this, "Exception detected", Toast.LENGTH_LONG).show();
-                    }
-                });
-                Log.e("Upload file exception", "Exception: " + e.getMessage(), e);
-            }
-            dialog.dismiss();
-            return serverResponseCode;
+            new MultipartUploadRequest(this, uploadId, upLoadServerUrl)
+                    .addFileToUpload(uploadname, "image")
+                    .addParameter("name", name)
+                    .setMaxRetries(2)
+                    .startUpload();
+        }catch (Exception exc){
+            Toast.makeText(this, exc.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -250,10 +145,12 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                 if(isempty) {
                     Toast.makeText(GalleryActivity.this, "Please add some photos to this trip before uploading", Toast.LENGTH_LONG).show();
                 }else {
-                    dialog = ProgressDialog.show(GalleryActivity.this, "", "Uploading...", true);
+                    //dialog = ProgressDialog.show(GalleryActivity.this, "", "Uploading...", true);
                     files = imagesFolder.listFiles();
                     for (int i = 0; i < files.length; i++) {
                         final String uploadname = files[i].toString();
+                        uploadMultipart(uploadname);
+                        /*
                         Thread thread = new Thread(new Runnable() {
                             @Override
                             public void run() {
@@ -265,7 +162,7 @@ public class GalleryActivity extends AppCompatActivity implements View.OnClickLi
                             thread.join();
                         } catch (InterruptedException e) {
                             e.printStackTrace();
-                        }
+                        }*/
                     }
                 }
                 break;
